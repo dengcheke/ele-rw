@@ -1,0 +1,272 @@
+.ele-rw-table {
+  width: 100%;
+  color: black;
+  position: relative;
+
+  .inner-wrapper {
+    position: relative;
+
+    &:hover {
+      .scrollbar__bar {
+        opacity: 1;
+        transition: opacity 340ms ease-out;
+      }
+    }
+  }
+
+  table {
+    table-layout: fixed;
+  }
+
+  .table-middle {
+    height: 100%;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+
+    .table__header-wrapper {
+      overflow: hidden;
+      flex: none;
+    }
+
+    .table__body-wrapper {
+      display: inline-block;
+      vertical-align: top; /*fix父元素scrollHeight 与内容不一致*/
+    }
+
+    .scroll-wrapper {
+      overflow: hidden;
+      position: relative;
+      flex: 1 0 0;
+
+      .scroll-view {
+        overflow: scroll;
+      }
+    }
+  }
+
+  .table__fixed-left {
+    position: absolute;
+    left: 0;
+    top: 0;
+    overflow: hidden;
+
+    &.fixed-shadow {
+      box-shadow: 5px 0 10px -5px;
+    }
+
+    .table__header-wrapper,
+    .table__body-wrapper {
+      width: 100%;
+      overflow: hidden;
+    }
+  }
+
+  .table__fixed-right {
+    position: absolute;
+    overflow: hidden;
+    right: 0;
+    top: 0;
+
+    &.fixed-shadow {
+      box-shadow: -5px 0 10px -5px;
+    }
+
+    .table__header-wrapper,
+    .table__body-wrapper {
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+  }
+
+  .scrollbar__bar {
+    position: absolute;
+    right: 2px;
+    bottom: 2px;
+    z-index: 1;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 120ms ease-out;
+
+    &.is-vertical {
+      width: 6px;
+      top: 2px;
+
+      & > div {
+        width: 100%;
+      }
+    }
+
+    &.is-horizontal {
+      height: 6px;
+      left: 2px;
+
+      & > div {
+        height: 100%;
+      }
+    }
+  }
+
+  .scrollbar__thumb {
+    position: relative;
+    display: block;
+    width: 0;
+    height: 0;
+    cursor: pointer;
+    border-radius: inherit;
+    background-color: #30688b;
+    transition: .3s background-color;
+
+    &:hover {
+      background-color: rgba(144, 147, 153, .5);
+    }
+  }
+
+  .table__header {
+    color: #69d6f1;
+    background-color: rgba(20, 78, 116, 1);
+
+    .sort-caret-wrapper {
+      display: inline-flex;
+      margin-left: 5px;
+      flex-direction: column;
+      align-items: center;
+      height: 34px;
+      width: 16px;
+      vertical-align: middle;
+      cursor: pointer;
+      position: relative;
+
+      .sort-caret {
+        width: 0;
+        height: 0;
+        border: 5px solid transparent;
+        position: absolute;
+        transition: 0.1s border-color;
+        transform: scale(1.05);
+
+        &.asc {
+          border-bottom-color: #c0c4cc;
+          top: 4px;
+
+          &.is-active {
+            border-bottom-color: #409eff;
+          }
+        }
+
+        &.desc {
+          border-top-color: #c0c4cc;
+          bottom: 4px;
+
+          &.is-active {
+            border-top-color: #409eff;
+          }
+        }
+      }
+    }
+  }
+
+  .table__body {
+    color: white;
+
+    tr.row {
+      transition: 0.1s background-color;
+      background-color: #002534;
+
+      &.is-hover, &.is-selected {
+        background-color: #133e58;
+      }
+    }
+
+    td > .cell {
+      text-align: center;
+      /*white-space: normal;
+      word-break: break-word;*/
+    }
+  }
+
+  td {
+    padding: 0;
+  }
+
+  td.is-hidden {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  .cell-checkbox {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+
+    &.is-checked:before {
+      background-color: #409eff;
+    }
+
+    &:before {
+      content: "";
+      display: block;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+      background-color: white;
+      transition: border-color .25s cubic-bezier(.71, -.46, .29, 1.46),
+      background-color .25s cubic-bezier(.71, -.46, .29, 1.46);
+    }
+
+    &.is-checked:after {
+      transform: rotate(45deg) scaleY(1);
+    }
+
+    &:after {
+      content: "";
+      display: block;
+      position: absolute;
+      height: 8px;
+      width: 4px;
+      left: 4px;
+      top: 2px;
+      z-index: 2;
+      border: 1px solid #fff;
+      border-left: 0;
+      border-top: 0;
+      transform: rotate(45deg) scaleY(0);
+      transition: transform .15s ease-in .05s;
+      transform-origin: center;
+    }
+  }
+
+  .empty-slot {
+    background-color: #002534;
+  }
+
+  /*border*/
+  /*.table__header {
+    td {
+      border-bottom: 1px solid red;
+      border-right: 1px solid red;
+    }
+  }
+  .table__body {
+    tr:not(:last-child) {
+      td {
+        border-bottom: 1px solid cyan;
+      }
+    }
+
+    td:not(:last-child) {
+      border-right: 1px solid cyan;
+    }
+  }*/
+
+}
