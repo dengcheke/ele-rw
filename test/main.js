@@ -4,7 +4,6 @@ import CustomTable from '../packages/table/index';
 Vue.config.performance = true;
 
 const aCtor = Vue.extend(CustomTable)
-let curRings = 1;
 const cols = [
     {key: 'id', type: 'check'},
     {key: 'a', label:'a'},
@@ -15,7 +14,7 @@ const cols = [
 ]
 const a = new aCtor({
     propsData: {
-        //clickMode: 'multi',
+        clickMode: 'multi',
         tableCols: cols,
         height: '100%',
         tableData: [
@@ -27,7 +26,12 @@ const a = new aCtor({
                 return res;
             }, {})
         })*/
-    }
+    },
+    _parentListeners:{
+        'check-change':function(v){
+            console.log(v);
+        }
+    },
 });
 a.$mount('#app');
 window.__vm = a;

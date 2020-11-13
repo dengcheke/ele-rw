@@ -15,9 +15,11 @@ export default {
     computed: {
         ...mapping('store', {
             leafColumns: store => store.leafColumns || [],
-            tableData: store => store.tableData || [],
             tableBodyWidth: store => store.tableBodyWidth || 0,
         }),
+        tableData(){
+            return this.table.tableData || [];
+        }
     },
     render(h) {
         const columns = this.leafColumns, data = this.tableData;
@@ -61,20 +63,29 @@ export default {
         return table;
     },
     watch: {
-        'store.curSelectRows': {
-            handler: function (rowSet) {
-                this.$nextTick(() => {
-                    const rowElms = Array.from(this.$el.querySelectorAll("tr.row"));
-                    rowElms.forEach((elm, idx) => {
-                        this.store.curSelectIdxs.indexOf(idx) !== -1
-                            ? addClass(elm, 'is-selected')
-                            : removeClass(elm, 'is-selected')
+        'store.checkTrigger':{
+            handler:function(){
+                this.$nextTick(()=>{
+                    const elms = this.$el.querySelectorAll('tr.row');
+                    const map = this.store.checkMap;
+                    this.tableData.forEach((row,idx)=>{
+                        map.get(row)
+                            ? addClass(elms[idx],'is-checked')
+                            : removeClass(elms[idx],'is-checked')
                     })
                 })
-            },
-            immediate: true
+            }
         },
-        'store.curHoverIdx': {
+        'store.selectIdx': {
+            handler: function (newRowIdx, oldRowIdx) {
+                const rows = this.$el.querySelectorAll('tr.row');
+                const oldRowDom = rows[oldRowIdx];
+                const newRowDom = rows[newRowIdx];
+                oldRowDom && removeClass(oldRowDom,'current-row');
+                newRowDom && addClass(newRowDom,'current-row');
+            },
+        },
+        'store.hoverIdx': {
             handler: function (newRowIdx, oldRowIdx) {
                 const rows = this.$el.querySelectorAll('tr.row');
                 const oldRowDom = rows[oldRowIdx];

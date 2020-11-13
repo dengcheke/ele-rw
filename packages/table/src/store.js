@@ -75,6 +75,7 @@ export function mapping(attrName, mapper) {
 
 const TableStore = Vue.extend({
     data() {
+        this.table = null;
         return {
             containerWidth: 0,//容器宽度,列宽%以此为基准
 
@@ -94,16 +95,16 @@ const TableStore = Vue.extend({
             fixedLeftWidth: 0,//左边固定总列宽
             fixedRightWidth: 0,//右边固定总列宽
 
-            //data
-            tableData: [],//表格数据
-            curSelectRows: [], //当前选中的
-            curSelectIdxs: [],
+            selectRow: null,
+            selectIdx: null,
 
-            curHoverIdx: null, //当前悬浮的row Index
-            curHoverRow: null,
+            hoverRow: null,
+            hoverIdx: null,
 
-            checkedRows: [],//所有勾选节点
-            checkedIdxs: []
+
+            checkMap: new Map(),//所有勾选节点
+            checkNums:0,
+            checkTrigger:1
         }
     },
     methods: {
@@ -276,16 +277,20 @@ const TableStore = Vue.extend({
             this.fixedLeftWidth = fixedLeft;
             this.fixedRightWidth = fixedRight;
         },
+
+
+
+        clearState() {
+            this.selectRow = null;
+            this.selectIdx = null;
+            this.hoverIdx = null;
+            this.hoverRow = null;
+        },
     },
     watch: {
         containerWidth: function (v) {
             this.computedColWidth();//重新计算每列布局
         },
-        tableData: function () {
-            this.curSelectRows = [];
-            this.curSelectIdxs = [];
-            this.curHoverId = null;
-        }
     }
 });
 

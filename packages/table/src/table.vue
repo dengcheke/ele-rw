@@ -53,7 +53,7 @@
 
 <script type="text/babel">
 import {getScrollBarWidth, on} from "@src/utils/dom";
-import {clamp, mapping} from "@src/utils/index";
+import {clamp, isDefined, mapping} from "@src/utils/index";
 import {MouseWheel} from "@src/directives/v-mousewheel";
 import EmptySlot from '../../empty-slot/main';
 import store from './store';
@@ -77,11 +77,6 @@ export default {
         }
     },
     props: {
-        clickMode: {
-            type: String,
-            default: 'single',
-            desc:'single 单选, multi 多选, 其他值 不开启, 被选中tr 添加 is-selected'
-        },
         rowKey: {
             type: String,
             default: null,
@@ -122,6 +117,7 @@ export default {
     },
     data() {
         this.store = new store();
+        this.store.table = this;
         let barWidth = Math.ceil(getScrollBarWidth());
         return {
             headerWrapHeight: 0, //header内容高度
@@ -172,8 +168,10 @@ export default {
             fixedRightWidth: store => store.fixedRightWidth || 0,
             tableBodyHeight: store => store.tableBodyHeight || 0,
             tableBodyWidth: store => store.tableBodyWidth || 0,
-            empty: store => !store.tableData || store.tableData.length === 0
         }),
+        empty(){
+            return !this.tableData || this.tableData.length === 0
+        }
     },
     methods: {
         calcElStyle() {
@@ -336,6 +334,55 @@ export default {
             this.$emit(topic, ...args);
         },
 
+
+        //设置当前行
+        setCurrentRow(row) {
+            const store = this.store;
+            row = this.getRow(row);
+            if (!row) return;
+            store.selectRow = row;
+            store.selectIdx = this.tableData.findIndex(i => i === row);
+        },
+
+        getRow(row) {
+            if (typeof row !== 'object') {
+                if (this.rowKey) {
+                    return this.tableData.find(i => i[this.rowKey] === row)
+                } else {
+                    return null;
+                }
+            } else {
+                return row;
+            }
+        },
+
+        //勾选节点
+        toggleRowChecked(row, checked) {
+            const store = this.store;
+            row = this.getRow(row);
+            if (!row) return;
+            let change = false;
+            if (isDefined(checked)) {
+                checked = Boolean(checked);
+                if (store.checkMap.get(row) !== checked) {
+                    change = true;
+                    store.checkMap.set(row, checked);
+                    store.checkNums += (checked ? 1 : -1);
+                }
+            } else { //toggle
+                checked = !store.checkMap.get(row);
+                store.checkMap.set(row, checked);
+                store.checkNums += (checked ? 1 : -1)
+                change = true;
+            }
+            change && this.store.checkTrigger++;
+        },
+        setAllChecked(check) {
+            check = Boolean(check);
+            this.store.checkMap = new Map(this.tableData.map(i => [i, check]));
+            this.store.checkNums = check ? this.tableData.length : 0;
+            this.store.checkTrigger++;
+        },
         //列相关
         getSortColumnNodes() {
             return this.store.sortColumns;
@@ -347,6 +394,11 @@ export default {
         }
     },
     watch: {
+        'store.checkTrigger': {
+            handler: function () {
+                this.dispatchEvent('check-change', this.store.checkMap);
+            }
+        },
         tableCols: {
             handler: function (cols) {
                 if (cols && cols.length) {
@@ -358,8 +410,8 @@ export default {
         },
         tableData: {
             handler: function (newly, older) {
-                if (newly !== older) {
-                    this.store.tableData = newly || [];
+                this.store.clearState();
+                if (newly !== older) { //重新赋值
                     this.$nextTick(() => {
                         [this.$refs.scrollView,
                             this.$refs.leftScrollWrap,
@@ -371,6 +423,20 @@ export default {
                         })
                     });
                 }
+                const oldMap = this.store.checkMap;
+                let newMap = this.store.checkMap = new Map(this.tableData.map(i => [i, false]));
+                let checkNum = 0;
+                this.tableData.forEach(row => {
+                    if (oldMap.has(row)) {
+                        let check = oldMap.get(row);
+                        check && checkNum++;
+                        newMap.set(row, check);
+                        oldMap.delete(row);
+                    }
+                });
+                this.store.checkNums = checkNum;
+                let checkChange = Array.from(oldMap.values()).find(i => Boolean(i));
+                checkChange && this.store.checkTrigger++;
             },
             immediate: true
         }

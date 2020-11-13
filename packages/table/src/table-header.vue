@@ -1,6 +1,7 @@
 <script type="text/jsx">
 import {ASC, DESC} from "./store";
 import {mapping} from "@src/utils/index";
+import {addClass, removeClass} from "@src/utils/dom";
 
 export default {
     name: "table-header",
@@ -17,8 +18,22 @@ export default {
             leafColumns: store => store.leafColumns || [],
             tableBodyWidth: store => store.tableBodyWidth || 0,
             checkedRows: store => store.checkedRows,
-            tableData: store => store.tableData
-        })
+        }),
+        tableData() {
+            return this.table.tableData || [];
+        }
+    },
+    methods: {
+        handleCheck(e) {
+            e.stopPropagation();
+            const checkNums = this.store.checkNums,
+                totalNums = this.tableData.length;
+            if (checkNums < totalNums) {
+                this.table.setAllChecked(true);
+            } else {
+                this.table.setAllChecked(false);
+            }
+        }
     },
     render(h) {
         const colGroup = (<colgroup>
@@ -31,6 +46,7 @@ export default {
         const trs = [];
         for (let i = 1; i <= this.maxLevel; i++) {
             const columns = this.columnLevelMap[i];
+            let hasCheckCol = false;
             const tds = columns.map(colNode => {
                 const tdAttr = {
                     'class': {
@@ -53,24 +69,13 @@ export default {
                 } else if (colNode === 'text') {
                     headerRender = [<span>{colNode.label}</span>];
                 } else if (colNode.type === 'check') {
-                    const checkNums = this.checkedRows.length,
-                        totalNums = this.tableData.length;
+                    hasCheckCol = true;
                     headerRender = [<span {...{
                         class: {
                             'cell-checkbox': true,
-                            'is-checked': checkNums === totalNums,
-                            'is-indeterminate': checkNums && checkNums < totalNums
                         },
                         on: {
-                            click: (e) => {
-                                e.stopPropagation();
-                                const checkNums = this.checkedRows.length;
-                                if (checkNums === 0) {
-                                    this.store.checkedRows = this.tableData;
-                                } else {
-                                    this.store.checkedRows = [];
-                                }
-                            }
+                            click: this.handleCheck
                         }
                     }}/>]
                 }
@@ -122,7 +127,7 @@ export default {
                     </div>
                 </td>
             });
-            trs.push(<tr>{tds}</tr>);
+            trs.push(<tr class={{'has-check': hasCheckCol}}>{tds}</tr>);
         }
         return <table class="table__header"
                       attrs={{
@@ -136,6 +141,25 @@ export default {
             {trs}
             </thead>
         </table>
+    },
+    watch: {
+        'store.checkTrigger': {
+            handler: function () {
+                this.$nextTick(() => {
+                    const tr = this.$el.querySelector('tr.has-check');
+                    if (!tr) return;
+                    const checkNums = this.store.checkNums,
+                        totalNums = this.tableData.length;
+                    removeClass(tr, ['is-checked', 'is-indeterminate']);
+                    if (checkNums === totalNums) {
+                        addClass(tr, 'is-checked');
+                    } else if (checkNums && checkNums < totalNums) {
+                        addClass(tr, 'is-indeterminate');
+                    }
+                })
+
+            }
+        }
     }
 }
 </script>

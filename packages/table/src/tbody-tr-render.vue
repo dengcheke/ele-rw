@@ -4,64 +4,37 @@ import {mapping} from "@src/utils/index";
 export default {
     name: "tbody-tr-render",
     inject: ['table', 'store'],
-    props: ['row','idx','fixed'],
+    props: ['row', 'idx', 'fixed'],
     computed: {
         ...mapping('store', {
             leafColumns: store => store.leafColumns || [],
-            curHoverIdx: store => store.curHoverIdx,
-            tableData: store => store.tableData
         }),
-        isChecked() {
-            return this.store.checkedRows.indexOf(this.row) !== -1
-        }
     },
     methods: {
         handleClickRow(e) {
-            const mode = this.table.clickMode,
-                rowSet = this.store.curSelectRows,
-                idxSet = this.store.curSelectIdxs,
-                row = this.row,
-                idx = this.idx;
-            let i = rowSet.indexOf(row);
-            if (mode === 'single') {
-                if (i !== -1) {//已经存在,移除
-                    rowSet.splice(0);
-                    idxSet.splice(0);
-                } else { //之前不存在
-                    rowSet.splice(0); //只能有一个
-                    idxSet.splice(0);
-                    rowSet.push(row);
-                    idxSet.push(idx);
-                }
-            } else if (mode === 'multi') {
-                if (i !== -1) {
-                    rowSet.splice(i, 1);
-                    idxSet.splice(i, 1);
-                } else {
-                    rowSet.push(row);
-                    idxSet.push(idx);
-                }
-            }
-            let target = e.target,col;
-            if(target.tagName.toLowerCase() === 'tr'){
+            const row = this.row;
+            this.table.setCurrentRow(row);
+            let target = e.target, col;
+            if (target.tagName.toLowerCase() === 'tr') {
                 target = null;
-            }else{
-                while(target && target.tagName.toLowerCase()!=='td'){
+            } else {
+                while (target && target.tagName.toLowerCase() !== 'td') {
                     target = target.parentElement;
                 }
             }
-            if(target){
+            if (target) {
                 let id = target.dataset.uid;
-                id && (col = this.store.leafColumns.find(i=>i._uid==id))
+                id && (col = this.store.leafColumns.find(i => i._uid == id))
             }
-            this.table.dispatchEvent('click-row', {row: row, column: col,event: e});
+            this.table.dispatchEvent('click-row', {row: row, column: col, event: e});
         },
-        handleEnterRow(e){
-            this.store.curHoverIdx = this.idx;
-            this.store.curHoverRow = this.row;
+        handleEnterRow(e) {
+            this.store.hoverRow = this.row;
+            this.store.hoverIdx = this.idx;
         },
-        handleChecked(e){
-
+        handleChecked(e) {
+            e.stopPropagation();
+            this.table.toggleRowChecked(this.row);
         }
     },
     render: function (h) {
@@ -71,8 +44,8 @@ export default {
             row = this.row;
         const trAttr = {
             class: {row: true},
-            attrs:{
-                'data-row-index':idx
+            attrs: {
+                'data-row-index': idx
             },
             on: {
                 mouseenter: this.handleEnterRow,
@@ -85,7 +58,7 @@ export default {
                     'class': {
                         'is-hidden': colNode.fixed !== fixed
                     },
-                    attrs:{
+                    attrs: {
                         'data-uid': colNode._uid
                     },
                     key: colNode.key
@@ -97,18 +70,9 @@ export default {
                     renderCell = row[colNode.key];
                 } else if (colNode.type === 'check') {
                     renderCell = <span {...{
-                        class: {
-                            'cell-checkbox': true,
-                            'is-checked': this.isChecked
-                        },
+                        class: ['cell-checkbox'],
                         on: {
-                            click: (e) => {
-                                e.stopPropagation();
-                                let i = this.store.checkedRows.indexOf(row);
-                                i !== -1
-                                    ? this.store.checkedRows.splice(i, 1)
-                                    : this.store.checkedRows.push(row);
-                            }
+                            click: this.handleChecked
                         }
                     }}/>
                 }
