@@ -166,7 +166,6 @@ export default {
             fixedLeftWidth: store => store.fixedLeftWidth || 0,
             fixedRightCount: store => store.fixedRightCount || 0,
             fixedRightWidth: store => store.fixedRightWidth || 0,
-            tableBodyHeight: store => store.tableBodyHeight || 0,
             tableBodyWidth: store => store.tableBodyWidth || 0,
         }),
         empty(){
@@ -218,7 +217,9 @@ export default {
                 }
             });
             //初始化滚动组件关联
-            const view = this.$refs.scrollView, barX = this.$refs.barX, barY = this.$refs.barY;
+            const view = this.$refs.scrollView,
+                barX = this.$refs.barX,
+                barY = this.$refs.barY;
             barX.wrap = barY.wrap = view;
 
             //监听size change
@@ -228,6 +229,9 @@ export default {
             const scrollWrap = this.$refs.scrollWrap;
 
             const ro = new ResizeObserver((entries) => {
+                //not visible
+                if (!el.offsetHeight || !el.offsetWidth) return;
+
                 const elEn = entries.find(en => en.target === el);
                 if (elEn) {
                     const w = el.clientWidth, h = el.clientHeight;
@@ -340,8 +344,13 @@ export default {
             const store = this.store;
             row = this.getRow(row);
             if (!row) return;
-            store.selectRow = row;
-            store.selectIdx = this.tableData.findIndex(i => i === row);
+            if(row !== store.selectRow){
+                store.selectRow = row;
+                store.selectIdx = this.tableData.findIndex(i => i === row);
+            }else{
+                store.selectRow = null;
+                store.selectIdx = null;
+            }
         },
 
         getRow(row) {
@@ -410,33 +419,49 @@ export default {
         },
         tableData: {
             handler: function (newly, older) {
-                this.store.clearState();
-                if (newly !== older) { //重新赋值
-                    this.$nextTick(() => {
-                        [this.$refs.scrollView,
-                            this.$refs.leftScrollWrap,
-                            this.$refs.rightScrollWrap
-                        ].forEach(wrap => {
+                //重新赋值,滚动到左上角
+                newly !== older && this.$nextTick(() => {
+                    const {scrollView,leftScrollWrap,rightScrollWrap} = this.$refs;
+                        [scrollView,leftScrollWrap,rightScrollWrap].forEach(wrap => {
                             if (wrap) {
                                 wrap.scrollTop = wrap.scrollLeft = 0;
                             }
                         })
                     });
-                }
-                const oldMap = this.store.checkMap;
-                let newMap = this.store.checkMap = new Map(this.tableData.map(i => [i, false]));
-                let checkNum = 0;
-                this.tableData.forEach(row => {
-                    if (oldMap.has(row)) {
-                        let check = oldMap.get(row);
-                        check && checkNum++;
-                        newMap.set(row, check);
-                        oldMap.delete(row);
+                const store = this.store;
+                //update hover
+                store.hoverIdx = store.hoverRow = null;
+                //update select
+                {
+                    const idx = newly.indexOf(store.selectRow);
+                    if(idx!==-1){
+                        store.selectIdx = idx;
+                    }else{
+                        store.selectRow = store.selectIdx = null;
                     }
-                });
-                this.store.checkNums = checkNum;
-                let checkChange = Array.from(oldMap.values()).find(i => Boolean(i));
-                checkChange && this.store.checkTrigger++;
+                }
+                //update checked
+                {
+                    const oldMap = store.checkMap;
+                    let newMap = store.checkMap = new Map(this.tableData.map(i => [i, false]));
+                    let checkNum = 0,checkChange = false;
+                    this.tableData.forEach(row => {
+                        if (oldMap.has(row)) {
+                            let check = oldMap.get(row);
+                            check && checkNum++;
+                            newMap.set(row, check);
+                            oldMap.delete(row);
+                        }else{
+                            //checked item index changed, need update
+                            if(oldMap.size > 0 ){
+                                checkChange = true
+                            }
+                        }
+                    });
+                    this.store.checkNums = checkNum;
+                    checkChange = checkChange || Array.from(oldMap.values()).find(i => Boolean(i));
+                    checkChange && this.store.checkTrigger++;
+                }
             },
             immediate: true
         }

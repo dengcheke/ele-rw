@@ -42,6 +42,7 @@ export default {
             fixed = this.fixed,
             idx = this.idx,
             row = this.row;
+        console.log('render',row.a)
         const trAttr = {
             class: {row: true},
             attrs: {

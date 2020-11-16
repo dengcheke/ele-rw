@@ -76,11 +76,11 @@ export function mapping(attrName, mapper) {
 const TableStore = Vue.extend({
     data() {
         this.table = null;
+        this.checkMap = new Map();//所有勾选节点
         return {
             containerWidth: 0,//容器宽度,列宽%以此为基准
 
             tableBodyWidth: 0,//内容宽度
-            tableBodyHeight: 0,//内容高度
 
             defaultColWidth: 80,//col默认宽度
 
@@ -101,8 +101,6 @@ const TableStore = Vue.extend({
             hoverRow: null,
             hoverIdx: null,
 
-
-            checkMap: new Map(),//所有勾选节点
             checkNums:0,
             checkTrigger:1
         }
@@ -278,14 +276,6 @@ const TableStore = Vue.extend({
             this.fixedRightWidth = fixedRight;
         },
 
-
-
-        clearState() {
-            this.selectRow = null;
-            this.selectIdx = null;
-            this.hoverIdx = null;
-            this.hoverRow = null;
-        },
     },
     watch: {
         containerWidth: function (v) {
