@@ -32,9 +32,13 @@ export default {
             this.store.hoverRow = this.row;
             this.store.hoverIdx = this.idx;
         },
-        handleChecked(e) {
+        handleCheck(e) {
             e.stopPropagation();
             this.table.toggleRowChecked(this.row);
+        },
+        handleExpanded(e){
+            e.stopPropagation();
+            this.table.toggleExpanded(this.row);
         }
     },
     render: function (h) {
@@ -64,16 +68,23 @@ export default {
                     },
                     key: colNode.key
                 };
-                let renderCell;
+                let cellVnode;
                 if (colNode.render && typeof colNode.render === "function") {
-                    renderCell = colNode.render(h, {row: row, $index: idx, col: colNode.col});
+                    cellVnode = colNode.render(h, {row: row, $index: idx, col: colNode.col});
                 } else if (colNode.type === 'text') {
-                    renderCell = row[colNode.key];
+                    cellVnode = row[colNode.key];
                 } else if (colNode.type === 'check') {
-                    renderCell = <span {...{
+                    cellVnode = <span {...{
                         class: ['cell-checkbox'],
                         on: {
-                            click: this.handleChecked
+                            click: this.handleCheck
+                        }
+                    }}/>
+                }else if(colNode.type === 'expand'){
+                    cellVnode = <span {...{
+                        class:['cell-expand'],
+                        on:{
+                            click:this.handleExpanded
                         }
                     }}/>
                 }
@@ -91,7 +102,7 @@ export default {
                                 return pre;
                             }, {}))
                         }
-                    }}>{renderCell}</div>
+                    }}>{cellVnode}</div>
                 </td>
             })}
         </tr>

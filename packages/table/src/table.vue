@@ -78,7 +78,7 @@ export default {
     },
     props: {
         rowKey: {
-            type: String,
+            type: String | Function,
             default: null,
             desc: '每一行的id字段'
         },
@@ -94,9 +94,9 @@ export default {
             type: Function,
             default: null
         },
-        expandList: {
+        defaultExpands: {
             type: Array,
-            default: () => []
+            default: () => [],
         },
         height: {
             type: Number | String,
@@ -168,11 +168,12 @@ export default {
             fixedRightWidth: store => store.fixedRightWidth || 0,
             tableBodyWidth: store => store.tableBodyWidth || 0,
         }),
-        empty(){
+        empty() {
             return !this.tableData || this.tableData.length === 0
         }
     },
     methods: {
+        /// layout and event
         calcElStyle() {
             const style = {};
             style.height = typeof this.height === 'number' ? `${this.height}px` : this.height;
@@ -333,79 +334,171 @@ export default {
         mouseLeaveTable() {
             this.store.curHoverIdx = null;
         },
+
+
         /*代理子组件事件*/
         dispatchEvent(topic, ...args) {
             this.$emit(topic, ...args);
         },
 
 
+        //获得一个row的key值
+        getRowKey(row){
+            if(typeof this.rowKey === 'string'){
+                return row[this.rowKey];
+            }else if(typeof this.rowKey === 'function'){
+                return this.rowKey(row);
+            }else{
+                return null;
+            }
+        },
+        getRow(row) {
+            return this.tableData.find(i=>{
+                if(!row) return false;
+                if(typeof row === 'object'){
+                    if(i===row){
+                        return true;
+                    }else {
+                        let key1 = this.getRowKey(i), key2 = this.getRowKey(row);
+                        return !!(isDefined(key1) && isDefined(key2) && key1 === key2);
+                    }
+                }else{ //默认row是id值
+                    return this.getRowKey(i) === row;
+                }
+            })
+        },
+
         //设置当前行
         setCurrentRow(row) {
             const store = this.store;
             row = this.getRow(row);
             if (!row) return;
-            if(row !== store.selectRow){
+            if (row !== store.selectRow) {
                 store.selectRow = row;
                 store.selectIdx = this.tableData.findIndex(i => i === row);
-            }else{
+            } else {
                 store.selectRow = null;
                 store.selectIdx = null;
             }
         },
-
-        getRow(row) {
-            if (typeof row !== 'object') {
-                if (this.rowKey) {
-                    return this.tableData.find(i => i[this.rowKey] === row)
-                } else {
-                    return null;
-                }
-            } else {
-                return row;
-            }
+        //清空选中对象
+        clearCurrentRow() {
+            this.store.selectRow = this.store.selectIdx = null;
         },
 
         //勾选节点
         toggleRowChecked(row, checked) {
-            const store = this.store;
+            const store = this.store, checkedRows = store.checkedRows;
             row = this.getRow(row);
             if (!row) return;
-            let change = false;
-            if (isDefined(checked)) {
-                checked = Boolean(checked);
-                if (store.checkMap.get(row) !== checked) {
-                    change = true;
-                    store.checkMap.set(row, checked);
-                    store.checkNums += (checked ? 1 : -1);
-                }
-            } else { //toggle
-                checked = !store.checkMap.get(row);
-                store.checkMap.set(row, checked);
-                store.checkNums += (checked ? 1 : -1)
+            let change = false, i = checkedRows.indexOf(row);
+            if (isDefined(checked)) { //指定了状态
+                checked = Boolean(checked)
+            } else { //未指定，toggle
+                checked = i === -1
+            }
+            if (checked && i === -1) {
+                checkedRows.push(row);
+                store.checkNums++;
+                change = true;
+            } else if (!checked && i !== -1) {
+                checkedRows.splice(i, 1);
+                store.checkNums--;
                 change = true;
             }
             change && this.store.checkTrigger++;
         },
         setAllChecked(check) {
             check = Boolean(check);
-            this.store.checkMap = new Map(this.tableData.map(i => [i, check]));
+            this.store.checkedRows = check ? [...this.tableData] : [];
             this.store.checkNums = check ? this.tableData.length : 0;
             this.store.checkTrigger++;
         },
-        //列相关
+        //展开节点
+        toggleExpanded(row,expanded){
+            const store = this.store, expandedRows = store.expandedRows;
+            row = this.getRow(row);
+            if (!row) return;
+            let change = false, i = expandedRows.indexOf(row);
+            if (isDefined(expanded)) { //指定了状态
+                expanded = Boolean(expanded)
+            } else { //未指定，toggle
+                expanded = i === -1
+            }
+            if (expanded && i === -1) {
+                expandedRows.push(row);
+                change = true;
+            } else if (!expanded && i !== -1) {
+                expandedRows.splice(i, 1);
+                change = true;
+            }
+            change && this.store.expandTrigger++;
+        },
+
+        //获取排序的列节点
         getSortColumnNodes() {
             return this.store.sortColumns;
         },
 
-        //清空所有选中对象
-        clearSelectedRow() {
-            this.store.curSelectIdx = null;
-        }
+        _handleTableDataChange(newly, older) {
+            //重新赋值,滚动到左上角
+            newly !== older && this.$nextTick(() => {
+                const {scrollView, leftScrollWrap, rightScrollWrap} = this.$refs;
+                [scrollView, leftScrollWrap, rightScrollWrap].forEach(wrap => {
+                    if (wrap) {
+                        wrap.scrollTop = wrap.scrollLeft = 0;
+                    }
+                })
+            });
+            const store = this.store;
+            store.hoverIdx = store.hoverRow = null;
+            //update select
+            {
+                const idx = newly.indexOf(store.selectRow);
+                if (idx !== -1) {
+                    store.selectIdx = idx;
+                } else {
+                    store.selectRow = store.selectIdx = null;
+                }
+            }
+            //update check
+            {
+                const oldChecks = store.checkedRows;
+                let newChecks = store.checkedRows = [];
+                this.tableData.forEach(row => {
+                    let i = oldChecks.indexOf(row);
+                    if (i !== -1) {
+                        newChecks.push(row);
+                        oldChecks.splice(i, 1);
+                    }
+                });
+                this.store.checkNums = newChecks.length;
+                oldChecks.length && this.store.checkTrigger++;
+            }
+            //update expand
+            {
+                const oldExpandRows = store.expandedRows;
+                let newExpandRows = store.expandedRows = [];
+                this.tableData.forEach(row => {
+                    let i = oldExpandRows.indexOf(row);
+                    if(i !== -1){
+                        newExpandRows.push(row);
+                        oldExpandRows.splice(i,1);
+                    }
+                });
+                oldExpandRows.length && this.store.expandTrigger++;
+            }
+        },
     },
     watch: {
         'store.checkTrigger': {
             handler: function () {
-                this.dispatchEvent('check-change', this.store.checkMap);
+                this.$emit('check-change', [...this.store.checkedRows]);
+            }
+        },
+        'store.expandTrigger': {
+            handler: function () {
+                this.$emit('expand-change', [...this.store.expandedRows]);
             }
         },
         tableCols: {
@@ -419,49 +512,7 @@ export default {
         },
         tableData: {
             handler: function (newly, older) {
-                //重新赋值,滚动到左上角
-                newly !== older && this.$nextTick(() => {
-                    const {scrollView,leftScrollWrap,rightScrollWrap} = this.$refs;
-                        [scrollView,leftScrollWrap,rightScrollWrap].forEach(wrap => {
-                            if (wrap) {
-                                wrap.scrollTop = wrap.scrollLeft = 0;
-                            }
-                        })
-                    });
-                const store = this.store;
-                //update hover
-                store.hoverIdx = store.hoverRow = null;
-                //update select
-                {
-                    const idx = newly.indexOf(store.selectRow);
-                    if(idx!==-1){
-                        store.selectIdx = idx;
-                    }else{
-                        store.selectRow = store.selectIdx = null;
-                    }
-                }
-                //update checked
-                {
-                    const oldMap = store.checkMap;
-                    let newMap = store.checkMap = new Map(this.tableData.map(i => [i, false]));
-                    let checkNum = 0,checkChange = false;
-                    this.tableData.forEach(row => {
-                        if (oldMap.has(row)) {
-                            let check = oldMap.get(row);
-                            check && checkNum++;
-                            newMap.set(row, check);
-                            oldMap.delete(row);
-                        }else{
-                            //checked item index changed, need update
-                            if(oldMap.size > 0 ){
-                                checkChange = true
-                            }
-                        }
-                    });
-                    this.store.checkNums = checkNum;
-                    checkChange = checkChange || Array.from(oldMap.values()).find(i => Boolean(i));
-                    checkChange && this.store.checkTrigger++;
-                }
+                this._handleTableDataChange(newly, older);
             },
             immediate: true
         }

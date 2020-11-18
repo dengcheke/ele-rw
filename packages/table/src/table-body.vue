@@ -1,12 +1,13 @@
 <script type="text/jsx">
 import {mapping} from "@src/utils/index";
 import BodyTrRender from './tbody-tr-render';
+import ExpandTrRender from './expand-tr-render';
 import {addClass, removeClass} from "@src/utils/dom";
 
 export default {
     name: "table-body",
     inject: ['table', 'store'],
-    components: {BodyTrRender},
+    components: {BodyTrRender, ExpandTrRender},
     props: {
         fixed: {
             default: "middle",
@@ -17,12 +18,14 @@ export default {
             leafColumns: store => store.leafColumns || [],
             tableBodyWidth: store => store.tableBodyWidth || 0,
         }),
-        tableData(){
+        tableData() {
             return this.table.tableData || [];
         }
     },
     render(h) {
-        const columns = this.leafColumns, data = this.tableData;
+        const columns = this.leafColumns,
+            data = this.tableData,
+            expandRender = this.table.expandRender || this.table.$scopedSlots.expand;
         const colGroup = (<colgroup>
             {
                 columns.map(column => {
@@ -31,16 +34,29 @@ export default {
             }
         </colgroup>);
         const trs = data.map((row, idx) => {
-            const data = {
+            const key = this.table.rowKey ? row[this.table.rowKey] : undefined;
+            let trVnode, expandVnode;
+            const trData = {
                 attrs: {
                     row: row,
                     idx: idx,
                     fixed: this.fixed
-                }
+                },
+                key: key ? '_row_' + key : key
             }
-            this.table.rowKey && (data.key = row[this.table.rowKey]);
-            return <BodyTrRender {...data}/>
-        });
+            trVnode = <BodyTrRender {...trData}/>;
+            if (
+                (expandRender || this.table.$scopedSlots.expand)
+                && this.store.expandedRows.indexOf(row) !== -1
+            ) {
+                const expandData = {
+                    attrs: {row: row, idx: idx},
+                    key: key ? '_expand_row_' + key : key
+                }
+                expandVnode = <ExpandTrRender {...expandData}/>
+            }
+            return [trVnode, expandVnode]
+        }).flat().filter(Boolean);
         const tableAttr = {
             'class': {
                 'table__body': true
@@ -63,15 +79,28 @@ export default {
         return table;
     },
     watch: {
-        'store.checkTrigger':{
+        'store.expandTrigger':{
             handler:function(){
                 this.$nextTick(()=>{
                     const elms = this.$el.querySelectorAll('tr.row');
-                    const map = this.store.checkMap;
+                    const expands = this.store.expandedRows;
                     this.tableData.forEach((row,idx)=>{
-                        map.get(row)
-                            ? addClass(elms[idx],'is-checked')
-                            : removeClass(elms[idx],'is-checked')
+                        expands.indexOf(row) !== -1
+                            ? addClass(elms[idx],'is-expanded')
+                            : removeClass(elms[idx],'is-expanded')
+                    })
+                })
+            }
+        },
+        'store.checkTrigger': {
+            handler: function () {
+                this.$nextTick(() => {
+                    const elms = this.$el.querySelectorAll('tr.row');
+                    const checks = this.store.checkedRows;
+                    this.tableData.forEach((row, idx) => {
+                        checks.indexOf(row) !== -1
+                            ? addClass(elms[idx], 'is-checked')
+                            : removeClass(elms[idx], 'is-checked')
                     })
                 })
             }
@@ -81,8 +110,8 @@ export default {
                 const rows = this.$el.querySelectorAll('tr.row');
                 const oldRowDom = rows[oldRowIdx];
                 const newRowDom = rows[newRowIdx];
-                oldRowDom && removeClass(oldRowDom,'current-row');
-                newRowDom && addClass(newRowDom,'current-row');
+                oldRowDom && removeClass(oldRowDom, 'current-row');
+                newRowDom && addClass(newRowDom, 'current-row');
             },
         },
         'store.hoverIdx': {
@@ -90,8 +119,8 @@ export default {
                 const rows = this.$el.querySelectorAll('tr.row');
                 const oldRowDom = rows[oldRowIdx];
                 const newRowDom = rows[newRowIdx];
-                oldRowDom && removeClass(oldRowDom,'is-hover');
-                newRowDom && addClass(newRowDom,'is-hover');
+                oldRowDom && removeClass(oldRowDom, 'is-hover');
+                newRowDom && addClass(newRowDom, 'is-hover');
             }
         },
     }

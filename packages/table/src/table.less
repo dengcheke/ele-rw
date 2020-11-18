@@ -198,67 +198,101 @@
     pointer-events: none;
   }
 
-  tr {
-    .cell-checkbox {
-      display: inline-block;
-      width: 14px;
-      height: 14px;
-      border-radius: 2px;
-      overflow: hidden;
-      cursor: pointer;
-      position: relative;
-      background-color: white;
-      //use for check
-      &:before {
-        content: "";
-        display: block;
-        position: absolute;
-        height: 8px;
-        width: 4px;
-        left: 4px;
-        top: 2px;
-        z-index: 1;
-        border: 1px solid #fff;
-        border-left: 0;
-        border-top: 0;
-        transition: transform 0.25s;
-        transform: rotate(45deg) scaleY(0);
-        transform-origin: center;
-      }
-      //use for indeterminate
-      &:after {
-        content: "";
-        display: block;
-        position: absolute;
-        z-index: 2;
-        background-color: #fff;
-        height: 2px;
-        width: 50%;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%,-50%);
-      }
+
+  tr .cell-checkbox {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+    background-color: white;
+    //use for check
+    &:before {
+      content: "";
+      display: block;
+      position: absolute;
+      height: 8px;
+      width: 4px;
+      left: 4px;
+      top: 2px;
+      z-index: 1;
+      border: 1px solid #fff;
+      border-left: 0;
+      border-top: 0;
+      transition: transform 0.25s;
+      transform: rotate(45deg) scaleY(0);
+      transform-origin: center;
+    }
+
+    //use for indeterminate
+    &:after {
+      content: "";
+      display: block;
+      position: absolute;
+      z-index: 2;
+      background-color: #fff;
+      height: 2px;
+      width: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
     }
   }
-  tr.is-checked{
+
+  tr.is-checked {
     .cell-checkbox {
       background-color: #409eff;
     }
-    .cell-checkbox:before{
+
+    .cell-checkbox:before {
       transform: rotate(45deg) scaleY(1);
     }
-    .cell-checkbox:after{
+
+    .cell-checkbox:after {
       display: none;
     }
   }
-  tr.is-indeterminate{
-    .cell-checkbox{
+
+  tr.is-indeterminate {
+    .cell-checkbox {
       background-color: #409eff;
     }
-    .cell-checkbox:before{
+
+    .cell-checkbox:before {
       display: none;
     }
   }
+
+  tr .cell-expand {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.25s;
+    transform: rotate(-45deg);
+    transform-origin: center;
+
+    &:before {
+      content: "";
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border: 2px solid #fff;
+      border-left: 0;
+      border-top: 0;
+      left: 3px;
+      top: 3px;
+    }
+  }
+
+  tr.is-expanded .cell-expand {
+    transform: rotate(45deg);
+  }
+
 
   .empty-slot {
     background-color: #002534;

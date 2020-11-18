@@ -14,12 +14,12 @@ function ColumnNode(col) {
         render: col.render,//渲染函数 cell
         renderHeader: col.renderHeader,//表头渲染函数
         sortable: !!col.sortable,//是否排序
-        sort: null,//当前排序方式 asc / desc
+        sort: col.sort,//当前排序方式 asc / desc
         level: 1,//节点等级,从上往下增加,根为1
         isLeaf: false,//是否是叶子节点
         leafNum: 0,//子节点中叶子数目
         width: 80,//真实宽度 px值
-        fixed: Middle,//固定位置，默认中间
+        fixed: col.fixed || Middle,//固定位置，默认中间
         parent: null,//父节点
         children: [],//子节点
         col: col,//原始col对象
@@ -76,8 +76,9 @@ export function mapping(attrName, mapper) {
 const TableStore = Vue.extend({
     data() {
         this.table = null;
-        this.checkMap = new Map();//所有勾选节点
+        this.checkedRows = [];//所有勾选节点
         return {
+
             containerWidth: 0,//容器宽度,列宽%以此为基准
 
             tableBodyWidth: 0,//内容宽度
@@ -102,7 +103,10 @@ const TableStore = Vue.extend({
             hoverIdx: null,
 
             checkNums:0,
-            checkTrigger:1
+            checkTrigger:1,//for update row
+
+            expandedRows : [],
+            expandTrigger:1,//for update row
         }
     },
     methods: {

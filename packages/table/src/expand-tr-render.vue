@@ -1,26 +1,36 @@
 <script type="text/jsx">
-import {mapping} from "@src/utils/index";
-const noop = function(){};
+import {get, mapping} from "@src/utils/index";
+import CollapseTransition from '../../collapse-transition';
+const noop = function (h) {
+    return h('div', 'your expandContent here!')
+};
 export default {
     name: "expand-tr-render",
+    components: {CollapseTransition},
     inject: ['table', 'store'],
     props: ['row', 'idx'],
     computed: {
         ...mapping('store', {
             colNums: store => (store.leafColumns || []).length,
-            curHoverIdx: store => store.curHoverIdx,
         })
     },
     render: function (h) {
-        const colNums = this.colNums,
-            idx = this.idx,row = this.row;
+        const colNums = this.colNums, idx = this.idx, row = this.row;
+        console.log('expand-render', row.a)
         const trAttr = {
-            'class': { 'expand-row': true },
-            key: 'expand_row_' + idx
+            'class': ['expand-row'],
         };
+        let fn = this.table.expandRender,vnode;
+        if(fn){
+            vnode = fn(h, {row: row, idx: idx});
+        }else if(fn = this.table.$scopedSlots.expand){
+            vnode = fn({row:row,idx:idx});
+        }else{
+            vnode = null;
+        }
         return <tr {...trAttr}>
             <td class="expand-cell" colspan={colNums}>
-                {(this.table.expandRender || noop).call(this.table,h,{row:row,idx:idx})}
+                {vnode}
             </td>
         </tr>
     }
