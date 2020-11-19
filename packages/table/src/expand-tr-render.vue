@@ -22,9 +22,9 @@ export default {
         };
         let fn = this.table.expandRender,vnode;
         if(fn){
-            vnode = fn(h, {row: row, idx: idx});
+            vnode = fn(h, {row: row, index: idx});
         }else if(fn = this.table.$scopedSlots.expand){
-            vnode = fn({row:row,idx:idx});
+            vnode = fn({row:row,index:idx});
         }else{
             vnode = null;
         }

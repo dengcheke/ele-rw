@@ -34,7 +34,7 @@ export default {
             }
         </colgroup>);
         const trs = data.map((row, idx) => {
-            const key = this.table.rowKey ? row[this.table.rowKey] : undefined;
+            const key = this.table.getRowKey(row);
             let trVnode, expandVnode;
             const trData = {
                 attrs: {
@@ -42,7 +42,7 @@ export default {
                     idx: idx,
                     fixed: this.fixed
                 },
-                key: key ? '_row_' + key : key
+                key: key ? '_row_' + key : undefined,
             }
             trVnode = <BodyTrRender {...trData}/>;
             if (
@@ -51,7 +51,7 @@ export default {
             ) {
                 const expandData = {
                     attrs: {row: row, idx: idx},
-                    key: key ? '_expand_row_' + key : key
+                    key: key ? '_expand_row_' + key : undefined
                 }
                 expandVnode = <ExpandTrRender {...expandData}/>
             }
@@ -79,6 +79,7 @@ export default {
         return table;
     },
     watch: {
+        //tableData change will rerender,but expand row may not change
         'store.expandTrigger':{
             handler:function(){
                 this.$nextTick(()=>{

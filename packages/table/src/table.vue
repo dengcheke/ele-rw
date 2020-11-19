@@ -1,5 +1,5 @@
 <template>
-    <div class="ele-rw-table outer-wrapper" :style="calcElStyle()">
+    <div class="ele-rw-table outer-wrapper" :uid="'table_uid_'+_globalTableId" :style="calcElStyle()">
         <div class="inner-wrapper" :style="calcInnerStyle()">
             <div class="table-middle">
                 <div class="table__header-wrapper" ref="headerWrap">
@@ -52,11 +52,10 @@
 </template>
 
 <script type="text/babel">
-import {getScrollBarWidth, on} from "@src/utils/dom";
 import {clamp, isDefined, mapping} from "@src/utils/index";
 import {MouseWheel} from "@src/directives/v-mousewheel";
 import EmptySlot from '../../empty-slot/main';
-import store from './store';
+import store, {barWidthOb, getTableId} from './store';
 import TableHeader from './table-header';
 import TableBody from './table-body';
 import ResizeObserver from 'resize-observer-polyfill';
@@ -84,19 +83,25 @@ export default {
         },
         tableCols: {
             type: Array,
-            default: () => [], //{ key:'xx' ,lable:'xx',render:fn,renderHeader:fn,sortable:}
+            default: () => [],
+            /*{
+                type:'check'|'expand'|'text',
+                key: 'col列键值',
+                lable: '显示的名称',
+                render: (h,{row,rowIndex,col,colIndex})=>'cell渲染函数，不指定则默认 row[key]',
+                renderHeader: (h,{col,colIndex})=>'表头渲染，不指定默认label',
+                sortable: true,//是否参与排序
+                sort:'asc'|'desc',//初始排序，
+                fixed:'left'|'right',//是否固定列,
+                cellStyle: Object | Function({row,rowIndex,col,colIndex}),
+                cellClass: string | Object | Array<string> | Function({row,rowIndex,col,colIndex})
+                headerCellStyle: Object | Function({row,rowIndex,col,colIndex}),
+                headerCellClass: string | Object |Array<string> | Function({row,rowIndex,col,colIndex})
+            }*/
         },
         tableData: {
             type: Array,
             default: () => []
-        },
-        expandRender: {
-            type: Function,
-            default: null
-        },
-        defaultExpands: {
-            type: Array,
-            default: () => [],
         },
         height: {
             type: Number | String,
@@ -111,6 +116,71 @@ export default {
             type: Number,
             default: null
         },
+        expandRender: {
+            type: Function,
+            default: null,
+            desc: "展开render(h,{row,idx})或者 template #expand={row,index} "
+        },
+        spanMethod:{
+            type:Function,
+            default:null,
+            desc:'合并td方法 返回[rowspan,colspan],仅在常规col生效,check和expand不生效'
+        },
+
+        //style
+        rowStyle:{
+            type:Object|Function,
+            default:null,
+            desc:'tbody 行样式,fn({row,rowIndex)}'
+        },
+        rowClass:{
+            type:String|Object|Array|Function,
+            default:null,
+            desc:'tbody 行class,fn({row,rowIndex)}'
+        },
+        cellStyle:{
+            type:Object|Function,
+            default:null,
+            desc:'单元格样式,fn({row,rowIndex,col,colIndex})'
+        },
+        cellClass:{
+            type:String|Object|Array|Function,
+            default:null,
+            desc:'单元格class,fn({row,rowIndex,col,colIndex})'
+        },
+        headerRowStyle:{
+            type:Object|Function,
+            default:null,
+            desc:'表头 行样式,fn({row,rowIndex)}'
+        },
+        headerRowClass:{
+            type:String|Object|Array|Function,
+            default:null,
+            desc:'表头行class,fn({row,rowIndex)}'
+        },
+        headerCellStyle:{
+            type:Object|Function,
+            default:null,
+            desc:'表头单元格样式,fn({row,rowIndex,col,colIndex})'
+        },
+        headerCellClass:{
+            type:String|Object|Array|Function,
+            default:null,
+            desc:'表头单元格class,fn({row,rowIndex,col,colIndex})'
+        },
+
+        enableHighlightCol:{
+            type:Boolean,
+            default:false,
+        },
+        highlightColHeaderCellStyle:{
+            type:Object,
+            default:null
+        },
+        highlightColRowCellStyle:{
+            type:Object,
+            default:null
+        },
     },
     components: {
         EmptySlot, TableHeader, TableBody, Bar
@@ -118,7 +188,13 @@ export default {
     data() {
         this.store = new store();
         this.store.table = this;
-        let barWidth = Math.ceil(getScrollBarWidth());
+        this._globalTableId = getTableId();
+        this.headerStyleElm = document.createElement('style');
+        document.body.appendChild(this.headerStyleElm);
+        this.headerStyleElm.setAttribute('use-for-table-'+this._globalTableId,"");
+        this.$once('hook:beforeDestroy',()=>{
+            document.body.removeChild(this.headerStyleElm)
+        })
         return {
             headerWrapHeight: 0, //header内容高度
 
@@ -126,10 +202,6 @@ export default {
             bodyWrapWidth: 0,//bodywrap内容宽度
 
             scrollWrapHeight: 0, //滚动区域高度， fixed left/right body 高度应该与此一致，
-
-            barWidth: barWidth,//滚动条宽度
-            dpr: window.devicePixelRatio, //dpr变化导致滚动条宽度也变了。
-
 
             //滚动相关
             sizeWidth: 0, //滚动条宽度
@@ -148,6 +220,9 @@ export default {
         })
     },
     computed: {
+        barWidth() {
+            return barWidthOb.barWidth;
+        },
         showLeftShadow() {
             const scrollX = Number(this.sizeWidth), //水平可滚动
                 scrollPosition = this.scrollPosition,
@@ -210,13 +285,6 @@ export default {
         },
         //初始化
         initEvent() {
-            const un = on(window, 'resize', () => {
-                const dpr = window.devicePixelRatio;
-                if (dpr != this.dpr) {
-                    this.dpr = dpr;
-                    this.barWidth = Math.ceil(getScrollBarWidth());
-                }
-            });
             //初始化滚动组件关联
             const view = this.$refs.scrollView,
                 barX = this.$refs.barX,
@@ -266,7 +334,6 @@ export default {
             ro.observe(scrollWrap);
             this.$once("hooK:beforeDestroy", () => {
                 ro.disconnect();
-                un();
             });
         },
         /*在中间非固定表滚动时*/
@@ -332,37 +399,35 @@ export default {
         },
         /*鼠标离开组件时*/
         mouseLeaveTable() {
-            this.store.curHoverIdx = null;
+            this.store.hoverIdx = this.store.hoverRow = null;
         },
-
 
         /*代理子组件事件*/
         dispatchEvent(topic, ...args) {
             this.$emit(topic, ...args);
         },
 
-
         //获得一个row的key值
-        getRowKey(row){
-            if(typeof this.rowKey === 'string'){
+        getRowKey(row) {
+            if (typeof this.rowKey === 'string') {
                 return row[this.rowKey];
-            }else if(typeof this.rowKey === 'function'){
+            } else if (typeof this.rowKey === 'function') {
                 return this.rowKey(row);
-            }else{
+            } else {
                 return null;
             }
         },
         getRow(row) {
-            return this.tableData.find(i=>{
-                if(!row) return false;
-                if(typeof row === 'object'){
-                    if(i===row){
+            return this.tableData.find(i => {
+                if (!row) return false;
+                if (typeof row === 'object') {
+                    if (i === row) {
                         return true;
-                    }else {
+                    } else {
                         let key1 = this.getRowKey(i), key2 = this.getRowKey(row);
                         return !!(isDefined(key1) && isDefined(key2) && key1 === key2);
                     }
-                }else{ //默认row是id值
+                } else { //默认row是id值
                     return this.getRowKey(i) === row;
                 }
             })
@@ -415,7 +480,7 @@ export default {
             this.store.checkTrigger++;
         },
         //展开节点
-        toggleExpanded(row,expanded){
+        toggleRowExpanded(row, expanded) {
             const store = this.store, expandedRows = store.expandedRows;
             row = this.getRow(row);
             if (!row) return;
@@ -434,7 +499,10 @@ export default {
             }
             change && this.store.expandTrigger++;
         },
-
+        setAllExpanded(expanded) {
+            expanded = Boolean(expanded);
+            this.store.expandedRows = expanded ? [...this.tableData] : [];
+        },
         //获取排序的列节点
         getSortColumnNodes() {
             return this.store.sortColumns;
@@ -481,9 +549,9 @@ export default {
                 let newExpandRows = store.expandedRows = [];
                 this.tableData.forEach(row => {
                     let i = oldExpandRows.indexOf(row);
-                    if(i !== -1){
+                    if (i !== -1) {
                         newExpandRows.push(row);
-                        oldExpandRows.splice(i,1);
+                        oldExpandRows.splice(i, 1);
                     }
                 });
                 oldExpandRows.length && this.store.expandTrigger++;

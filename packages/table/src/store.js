@@ -1,10 +1,27 @@
 import Vue from 'vue';
 import {isDefined} from "@src/utils/index";
+import {getScrollBarWidth, on} from "@src/utils/dom";
+
+export const barWidthOb = Vue.observable({
+    barWidth: Math.ceil(getScrollBarWidth())
+})
+let _dpr = window.devicePixelRatio;
+on(window, 'resize', () => {
+    const dpr = window.devicePixelRatio;
+    if (dpr != _dpr) {
+        _dpr = dpr;
+        barWidthOb.barWidth = Math.ceil(getScrollBarWidth());
+    }
+})
 
 const LEFT = "left", Middle = "middle", RIGHT = "right";
 export const ASC = "asc", DESC = 'desc';
 
-let id = 0;
+let tableGlobalId = 0;
+export function getTableId(){
+    return ++tableGlobalId
+}
+let colGlobalId = 0;
 
 function ColumnNode(col) {
     const node = {
@@ -16,6 +33,7 @@ function ColumnNode(col) {
         sortable: !!col.sortable,//是否排序
         sort: col.sort,//当前排序方式 asc / desc
         level: 1,//节点等级,从上往下增加,根为1
+        levelIndex: null, //在当前层的col索引位置
         isLeaf: false,//是否是叶子节点
         leafNum: 0,//子节点中叶子数目
         width: 80,//真实宽度 px值
@@ -26,7 +44,7 @@ function ColumnNode(col) {
         _noRightBorder: false, //表头td 没有右border
     };
     Object.defineProperty(node, '_uid', {
-        value: `col_${++id}`,
+        value: `col_${++colGlobalId}`,
     });
     return node;
 }
@@ -37,7 +55,7 @@ function ColumnNode(col) {
  * @param W 整体宽度值
  * @returns {number}
  */
-function parseWidth(v, W) {
+export function parseWidth(v, W) {
     const vStr = String(v);
     v = parseFloat(vStr);
     if (isNaN(v)) return 0;
@@ -48,6 +66,53 @@ function parseWidth(v, W) {
     } else {
         return v >> 0;
     }
+}
+
+const _toString = Object.prototype.toString,
+    _Object = '[object Object]',
+    _Function = '[object Function]';
+
+//获取样式 object|function
+export function resolveStyle(style, ...args) {
+    if(!style) return {};
+    let s, type = _toString.call(style);
+    if (type === _Object) {
+        s = style
+    } else if (type === _Function) {
+        s = style.call(null, args);
+        if (_toString.call(s) !== _Object) {
+            console.warn('style must return object,your return is:',s,style)
+            s = {}
+        }
+    } else {
+        console.warn('style must be object, your style:',style)
+        s = {};
+    }
+    return s;
+}
+
+//获取class string | array<string> | function
+export function resolveClass(clazz, ...args) {
+    if(!clazz) return {};
+    let c, type = _toString.call(clazz);
+    if (type === _Object) {
+        c = clazz
+    } else if (type === _Function) {
+        c = clazz.call(null, args)
+        if (_toString.call(c) === _Function) {
+            c = {}
+        } else {
+            c = resolveClass(c)
+        }
+    } else if (Array.isArray(clazz)) {
+        c = clazz.reduce((res, cur) => {
+            res[String(cur)] = true;
+            return res;
+        }, {})
+    } else {
+        c = {[String(clazz)]: true}
+    }
+    return c;
 }
 
 export function mapping(attrName, mapper) {
@@ -73,12 +138,12 @@ export function mapping(attrName, mapper) {
     return res;
 }
 
+
 const TableStore = Vue.extend({
     data() {
         this.table = null;
-        this.checkedRows = [];//所有勾选节点
+        this.checkedRows = [];//所有勾选节点,
         return {
-
             containerWidth: 0,//容器宽度,列宽%以此为基准
 
             tableBodyWidth: 0,//内容宽度
@@ -102,11 +167,11 @@ const TableStore = Vue.extend({
             hoverRow: null,
             hoverIdx: null,
 
-            checkNums:0,
-            checkTrigger:1,//for update row
+            checkNums: 0,
+            checkTrigger: 1,
 
-            expandedRows : [],
-            expandTrigger:1,//for update row
+            expandedRows: [],
+            expandTrigger: 1,
         }
     },
     methods: {
@@ -196,9 +261,10 @@ const TableStore = Vue.extend({
                     node.level = 1;
                 }
                 if (columnLevelMap[node.level]) {
-                    columnLevelMap[node.level].push(node);
+                    node.levelIndex = columnLevelMap[node.level].push(node) - 1;
                 } else {
                     columnLevelMap[node.level] = [node];
+                    node.levelIndex = 0;
                 }
                 if (col.children && col.children.length) {
                     node.isLeaf = false;

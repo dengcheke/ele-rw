@@ -32,7 +32,7 @@ export function rafThrottle(step) {
                     }
                 } catch (e) {
                     lock = false;
-                    console.log(e);
+                    console.error(e);
                     throw e;
                 }
             });
@@ -62,6 +62,25 @@ export function mapping(attrName, mapper) {
     });
     return res;
 }
+
+//转驼峰
+export function getKebabCase(str){
+    let res =  String(str).replace(/[A-Z]/g, function(item) {
+        return '-'+item.toLowerCase()
+    })
+    if(res[0]==="-"){
+        res = res.substring(1)
+    }
+    return res;
+}
+//object 转 style字符串
+export  function objectToStyleString(obj){
+    return Object.keys(obj).reduce((res,key)=>{
+       res += `${getKebabCase(key)}:${obj[key]};\n`
+       return res;
+    },'')
+}
+
 
 export function clamp(n,min,max){
     return Math.max(min, Math.min(max, n));

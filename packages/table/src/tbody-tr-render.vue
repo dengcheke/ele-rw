@@ -1,5 +1,6 @@
 <script type="text/jsx">
 import {mapping} from "@src/utils/index";
+import {resolveClass, resolveStyle} from "ele-rw-ui/packages/table/src/store";
 
 export default {
     name: "tbody-tr-render",
@@ -23,7 +24,7 @@ export default {
                 }
             }
             if (target) {
-                let id = target.dataset.uid;
+                let id = target.dataset.colUid;
                 id && (col = this.store.leafColumns.find(i => i._uid == id))
             }
             this.table.dispatchEvent('click-row', {row: row, column: col, event: e});
@@ -36,19 +37,30 @@ export default {
             e.stopPropagation();
             this.table.toggleRowChecked(this.row);
         },
-        handleExpanded(e){
+        handleExpanded(e) {
             e.stopPropagation();
-            this.table.toggleExpanded(this.row);
+            this.table.toggleRowExpanded(this.row);
         }
     },
     render: function (h) {
         const columns = this.leafColumns,
             fixed = this.fixed,
             idx = this.idx,
-            row = this.row;
-        console.log('render',row.a)
+            row = this.row,
+            {rowStyle, rowClass, cellStyle, cellClass} = this.table;
+        let trStyle = {}, trClass = {}, args = {row: row, rowIndex: idx};
+        if (rowStyle) {
+            trStyle = resolveStyle(rowStyle, args);
+        }
+        if (rowClass) {
+            trClass = resolveClass(rowClass, args);
+        }
         const trAttr = {
-            class: {row: true},
+            class: {
+                row: true,
+                ...trClass
+            },
+            style: trStyle,
             attrs: {
                 'data-row-index': idx
             },
@@ -58,53 +70,79 @@ export default {
             },
         };
         return <tr {...trAttr}>
-            {columns.map(colNode => {
-                const tdAttr = {
+            {columns.map((colNode, colIndex) => {
+                let tdAttr = {
                     'class': {
-                        'is-hidden': colNode.fixed !== fixed
+                        'is-hidden': colNode.fixed !== fixed,
                     },
                     attrs: {
-                        'data-uid': colNode._uid
+                        'data-col-uid': colNode._uid
                     },
                     key: colNode.key
                 };
-                let cellVnode;
+                const col = colNode.col;
+                let _cellStyle = {}, _cellClass = {}, args = {row: row, rowIndex: idx, col: col, colIndex: colIndex};
+                //span method
+                if (this.table.spanMethod && colNode.type === 'text') {
+                    const res = this.table.spanMethod.call(null, args)
+                    if (res) {
+                        if(res[0]===0||res[1]===0) return undefined;
+                        tdAttr.attrs.rowspan = res[0];
+                        tdAttr.attrs.colspan = res[1];
+                    }
+                }
+                //cell style
+                if (cellStyle) {
+                    _cellStyle = resolveStyle(cellStyle, args);
+                }
+                if (col.cellStyle) {
+                    _cellStyle = {
+                        ..._cellStyle,
+                        ...resolveStyle(col.cellStyle, args)
+                    }
+                }
+                if (cellClass) {
+                    _cellClass = resolveClass(cellClass, args);
+                }
+                if (col.cellClass) {
+                    _cellClass = {
+                        ..._cellClass,
+                        ...resolveClass(col.cellClass, args)
+                    }
+                }
+
+                //cell content
+                let cellContent;
                 if (colNode.render && typeof colNode.render === "function") {
-                    cellVnode = colNode.render(h, {row: row, $index: idx, col: colNode.col});
+                    cellContent = colNode.render(h, args);
                 } else if (colNode.type === 'text') {
-                    cellVnode = row[colNode.key];
+                    cellContent = row[colNode.key];
                 } else if (colNode.type === 'check') {
-                    cellVnode = <span {...{
+                    cellContent = <span {...{
                         class: ['cell-checkbox'],
                         on: {
                             click: this.handleCheck
                         }
                     }}/>
-                }else if(colNode.type === 'expand'){
-                    cellVnode = <span {...{
-                        class:['cell-expand'],
-                        on:{
-                            click:this.handleExpanded
+                } else if (colNode.type === 'expand') {
+                    cellContent = <span {...{
+                        class: ['cell-expand'],
+                        on: {
+                            click: this.handleExpanded
                         }
                     }}/>
                 }
-                //自定义cell class, String 或者 Array<String>
-                const cellClass = colNode.col.cellClass ? [].concat(colNode.col.cellClass) : [];
+
                 return <td {...tdAttr}>
                     <div {...{
-                        style: {
-                            ...(colNode.col.cellStyle || {})
-                        },
+                        style: _cellStyle,
                         class: {
                             "cell": true,
-                            ...(cellClass.reduce((pre, cur) => {
-                                pre[cur] = true;
-                                return pre;
-                            }, {}))
+                            ..._cellClass
                         }
-                    }}>{cellVnode}</div>
+                    }}>{cellContent}</div>
                 </td>
-            })}
+            }).filter(Boolean)}
         </tr>
     },
 }
