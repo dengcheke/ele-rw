@@ -4,6 +4,7 @@ import {mapping} from "@src/utils/index";
 import {addClass, removeClass} from "@src/utils/dom";
 import {objectToStyleString} from "@src/utils";
 import {resolveClass, resolveStyle} from "ele-rw-ui/packages/table/src/utils";
+import {TableEvent} from "./event-name";
 
 export default {
     name: "table-header",
@@ -95,9 +96,7 @@ export default {
             }
         },
         getCellStyle(colNode, args) {
-            let _cellStyle = {
-                alignItems: colNode.headerAlign || this.table.align
-            };
+            let _cellStyle = {};
             if (this.table.headerCellStyle) {
                 _cellStyle = resolveStyle(this.table.headerCellStyle, args);
             }
@@ -107,6 +106,7 @@ export default {
                     ...resolveStyle(colNode.col.headerCellStyle, args)
                 }
             }
+            colNode.headerAlign && (_cellStyle.alignItems = colNode.headerAlign)
             return _cellStyle
         },
         getCellClass(colNode, args) {
@@ -154,7 +154,7 @@ export default {
                             } else {
                                 colNode.sort = ASC;
                             }
-                            this.table.dispatchEvent('sort-change', colNode, this.store.sortColumns);
+                            this.table.dispatchEvent(TableEvent.SortChange, colNode, this.store.sortColumns);
                         }
                     }
                 }, descAttrs = {
@@ -170,7 +170,7 @@ export default {
                             } else {
                                 colNode.sort = DESC;
                             }
-                            this.table.dispatchEvent('sort-change', colNode, this.store.sortColumns);
+                            this.table.dispatchEvent(Event.SortChange, colNode, this.store.sortColumns);
                         }
                     }
                 };

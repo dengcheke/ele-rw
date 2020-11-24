@@ -1,6 +1,7 @@
 <script type="text/jsx">
 import {mapping, throttle} from "@src/utils/index";
 import {resolveClass, resolveStyle} from "ele-rw-ui/packages/table/src/utils";
+import {TableEvent} from "./event-name";
 
 export default {
     name: "tbody-tr-render",
@@ -14,11 +15,13 @@ export default {
     methods: {
         handleClickRow(e) {
             const row = this.row, store = this.store;
-            if (row === store.selectRow) {
-                store.selectRow = store.selectIdx = null;
-            } else {
-                store.selectRow = row;
-                store.selectIdx = this.idx;
+            if (this.table.enableCurrentRow) {
+                if (row === store.selectRow) {
+                    store.selectRow = store.selectIdx = null;
+                } else {
+                    store.selectRow = row;
+                    store.selectIdx = this.idx;
+                }
             }
             let target = e.target, col;
             if (target.tagName.toLowerCase() === 'tr') {
@@ -32,7 +35,7 @@ export default {
                 let id = target.dataset.colUid;
                 id && (col = this.store.leafColumns.find(i => i._uid == id))
             }
-            this.table.dispatchEvent('click-row', {row: row, column: col, event: e});
+            this.table.dispatchEvent(TableEvent.ClickRow, {row: row, index: this.idx, col: col, event: e});
         },
         handleEnterRow: throttle(function (e) {
             this.store.hoverRow = this.row;
@@ -87,9 +90,7 @@ export default {
             return _cellClass;
         },
         getCellStyle(colNode, args) {
-            let _cellStyle = {
-                alignItems: colNode.align || this.table.align
-            };
+            let _cellStyle = {};
             if (this.table.cellStyle) {
                 _cellStyle = resolveStyle(this.table.cellStyle, args);
             }
@@ -99,6 +100,7 @@ export default {
                     ...resolveStyle(colNode.col.cellStyle, args)
                 }
             }
+            colNode.align && (_cellStyle.alignItems = colNode.align);
             return _cellStyle
         },
         getCellContent(h, colNode, args) {
@@ -137,15 +139,15 @@ export default {
                     position: "relative"
                 }}>
                     {[<span {...{
-                            class: {
-                                iconfont: true,
-                                'icon-expand': this.treeNodeData && !this.treeNodeData.isLeaf,
-                                'use-for-tree': true
-                            },
-                            on: {
-                                click: this.handleTreeExpanded
-                            }
-                        }}/>, cellContent]}
+                        class: {
+                            iconfont: true,
+                            'icon-expand': this.treeNodeData && !this.treeNodeData.isLeaf,
+                            'use-for-tree': true
+                        },
+                        on: {
+                            click: this.handleTreeExpanded
+                        }
+                    }}/>, cellContent]}
                 </div>
             }
             return cellContent

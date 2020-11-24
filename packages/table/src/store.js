@@ -25,8 +25,8 @@ export function ColumnNode(col) {
         levelIndex: null, //在当前层的col索引位置 从0开始
         isLeaf: false,//是否是叶子节点
         leafNum: 0,//子节点中叶子数目
-        align: col.align || 'left', //对齐方式
-        headerAlign: col.headerAlign || 'left',
+        align: col.align, //对齐方式
+        headerAlign: col.headerAlign,
         width: 80,//真实宽度 px值
         fixed: col.fixed || Middle,//固定位置，默认中间
         parent: null,//父节点

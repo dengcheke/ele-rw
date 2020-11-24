@@ -54,6 +54,7 @@
 <script type="text/babel">
 import {clamp, isDefined, mapping, treeToArray} from "@src/utils/index";
 import {MouseWheel} from "@src/directives/v-mousewheel";
+import {TableEvent} from "./event-name";
 import EmptySlot from '../../empty-slot/main';
 import store from './store';
 import TableHeader from './table-header';
@@ -138,14 +139,17 @@ export default {
         expandRender: {
             type: Function,
             default: null,
-            desc: "展开render(h,{row,idx})或者 template #expand={row,index} "
+            desc: "展开render(h,{row})或者 template #expand={row} "
         },
         spanMethod: {
             type: Function,
             default: null,
             desc: '合并td方法 返回[rowspan,colspan],仅在常规col生效,check和expand不生效'
         },
-
+        enableCurrentRow: {
+            type: Boolean,
+            default: true
+        },
         //style
         rowStyle: {
             type: Object | Function,
@@ -170,22 +174,22 @@ export default {
         headerRowStyle: {
             type: Object | Function,
             default: null,
-            desc: '表头 行样式,fn({row,rowIndex)}'
+            desc: '表头行style,fn({ row<col>, rowIndex })'
         },
         headerRowClass: {
             type: String | Object | Array | Function,
             default: null,
-            desc: '表头行class,fn({row,rowIndex)}'
+            desc: '表头行class,fn({ row<col>, rowIndex })'
         },
         headerCellStyle: {
             type: Object | Function,
             default: null,
-            desc: '表头单元格样式,fn({row,rowIndex,col,colIndex})'
+            desc: '表头单元格样式,fn({ row<col>, rowIndex, col, colIndex })'
         },
         headerCellClass: {
             type: String | Object | Array | Function,
             default: null,
-            desc: '表头单元格class,fn({row,rowIndex,col,colIndex})'
+            desc: '表头单元格class,fn({ row<col>, rowIndex, col, colIndex })'
         },
 
         enableHighlightCol: {
@@ -449,24 +453,21 @@ export default {
         },
 
 
-        //设置当前行, 仅渲染生效
+        //设置当前行,不传则取消当前行
         setCurrentRow(row) {
             const store = this.store;
             row = this.getRow(row);
-            if (!row) return;
-            if (row !== store.selectRow) {
-                store.selectRow = row;
-                store.selectIdx = store.renderList.findIndex(i => i === row);
+            if (!row) {
+                store.selectRow = store.selectIdx = null;
             } else {
-                store.selectRow = null;
-                store.selectIdx = null;
+                if (row !== store.selectRow) {
+                    store.selectRow = row;
+                    store.selectIdx = store.renderList.findIndex(i => i === row);
+                } else {
+                    store.selectRow = store.selectIdx = null;
+                }
             }
         },
-        //清空选中对象
-        clearCurrentRow() {
-            this.store.selectRow = this.store.selectIdx = null;
-        },
-
 
         //勾选节点
         toggleRowChecked(row, checked) {
@@ -513,10 +514,10 @@ export default {
                     }
                 }
                 store.checkNums = checkedSet.size;
-                //节点勾选不改变渲染列表
                 this.store.checkTrigger++;
-                this.$emit('check', row, checked);
+                this.dispatchEvent(TableEvent.CheckRow, row, checked, checkedSet /*readOnly*/);
             }
+
             function checkParent(parent) {
                 const children = parent[self.childrenKey];
                 const checkItem = children.find(child => checkedSet.has(child));
@@ -525,10 +526,13 @@ export default {
             }
         },
         setAllChecked(check) {
+            const store = this.store;
             check = Boolean(check);
-            this.store.checkedSet = check ? new Set(this.store.flatDfsData) : new Set();
-            this.store.checkNums = check ? this.store.flatDfsData.length : 0;
-            this.store.checkTrigger++;
+            const oldAllCheck = store.checkNums === store.flatDfsData.length; //之前是否全选
+            if ((oldAllCheck && check) || (!store.checkNums && !check)) return;
+            store.checkedSet = check ? new Set(store.flatDfsData) : new Set();
+            store.checkNums = check ? store.flatDfsData.length : 0;
+            store.checkTrigger++;
         },
 
         //展开节点, 不渲染也能展开(树的子节点展开,树未展开)
@@ -552,13 +556,16 @@ export default {
             if (change) {
                 //展开节点不改变渲染列表,
                 this.store.expandTrigger++;
-                this.$emit('expand-change', row, expanded);
+                this.dispatchEvent(TableEvent.ExpandRow, row, expanded, expandedRows/*readOnly*/);
             }
         },
         setAllExpanded(expanded) {
             expanded = Boolean(expanded);
-            //expandedrows 会触发render
+            const store = this.store;
+            let oldAllExpanded = store.expandedRows.length === store.flatDfsData.length;
+            if((oldAllExpanded && expanded) || (!store.expandedRows.length && !expanded)) return;
             this.store.expandedRows = expanded ? [...this.store.flatDfsData] : [];
+            this.store.expandTrigger++;
         },
 
         //展开树节点
@@ -595,7 +602,7 @@ export default {
             if (change) {
                 //会导致渲染列表变化,重新渲染
                 store.renderListTrigger++;
-                this.$emit('tree-expand-change', row, expanded);
+                this.dispatchEvent(TableEvent.ExpandTreeRow, row, expanded, store.treeExpandedSet/*readOnly*/);
             }
         },
 
@@ -626,6 +633,15 @@ export default {
         },
     },
     watch: {
+        'store.checkTrigger': function () {
+            this.dispatchEvent(TableEvent.CheckChange, this.store.checkedSet /*readOnly*/);
+        },
+        'store.expandTrigger': function () {
+            this.dispatchEvent(TableEvent.ExpandChange, this.store.expandedRows /*readOnly*/);
+        },
+        'store.treeExpandTrigger':function(){
+            this.dispatchEvent(TableEvent.TreeExpandChange, this.store.treeExpandedSet /*readOnly*/);
+        },
         tableCols: {
             handler: function (cols) {
                 if (cols && cols.length) {

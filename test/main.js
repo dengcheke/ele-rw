@@ -17,17 +17,9 @@ window.__vm = new Vue({
                 },
                 {key: 'b', label: 'b'}
             ],
-            tableData: [
-                {
-                    a: 1, children: [
-                        {a: 11, children: [{a: 111}, {a: 112}]},
-                        {a: 12, children: [{a: 121}, {a: 122}]},
-                    ]
-                },
-                {a: 2},
-                {a: 3},
-                {a: 4}
-            ]
+            tableData: new Array(200).fill(0).map((i, idx) => {
+                return {a: idx}
+            })
         }
     },
     render(h) {
