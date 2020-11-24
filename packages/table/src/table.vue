@@ -52,14 +52,15 @@
 </template>
 
 <script type="text/babel">
-import {clamp, isDefined, mapping} from "@src/utils/index";
+import {clamp, isDefined, mapping, treeToArray} from "@src/utils/index";
 import {MouseWheel} from "@src/directives/v-mousewheel";
 import EmptySlot from '../../empty-slot/main';
-import store, {barWidthOb, getTableId} from './store';
+import store from './store';
 import TableHeader from './table-header';
 import TableBody from './table-body';
 import ResizeObserver from 'resize-observer-polyfill';
 import Bar from '../../bar';
+import {barWidthOb, getTableId} from "ele-rw-ui/packages/table/src/utils";
 /* $emit
 *      click-row:  {row: 当前点击row, idx: row索引(第几行), event: 点击事件},
 *      sort-change:  column:当前排序变化的列node, sortColumns:所有排序的列的node
@@ -80,6 +81,16 @@ export default {
             type: String | Function,
             default: null,
             desc: '每一行的id字段'
+        },
+        childrenKey: {
+            type: String,
+            default: 'children',
+            desc: '树形展开的子节点列表字段'
+        },
+        treeNodeKey: {
+            type: String,
+            default: null,
+            desc: '显示树形展开按钮的key'
         },
         tableCols: {
             type: Array,
@@ -116,70 +127,78 @@ export default {
             type: Number,
             default: null
         },
+        align: {
+            type: String,
+            default: 'left',//right center  同align-items
+        },
+        indent: {
+            type: Number,
+            default: 16
+        },
         expandRender: {
             type: Function,
             default: null,
             desc: "展开render(h,{row,idx})或者 template #expand={row,index} "
         },
-        spanMethod:{
-            type:Function,
-            default:null,
-            desc:'合并td方法 返回[rowspan,colspan],仅在常规col生效,check和expand不生效'
+        spanMethod: {
+            type: Function,
+            default: null,
+            desc: '合并td方法 返回[rowspan,colspan],仅在常规col生效,check和expand不生效'
         },
 
         //style
-        rowStyle:{
-            type:Object|Function,
-            default:null,
-            desc:'tbody 行样式,fn({row,rowIndex)}'
+        rowStyle: {
+            type: Object | Function,
+            default: null,
+            desc: 'tbody 行样式,fn({row,rowIndex)}'
         },
-        rowClass:{
-            type:String|Object|Array|Function,
-            default:null,
-            desc:'tbody 行class,fn({row,rowIndex)}'
+        rowClass: {
+            type: String | Object | Array | Function,
+            default: null,
+            desc: 'tbody 行class,fn({row,rowIndex)}'
         },
-        cellStyle:{
-            type:Object|Function,
-            default:null,
-            desc:'单元格样式,fn({row,rowIndex,col,colIndex})'
+        cellStyle: {
+            type: Object | Function,
+            default: null,
+            desc: '单元格样式,fn({row,rowIndex,col,colIndex})'
         },
-        cellClass:{
-            type:String|Object|Array|Function,
-            default:null,
-            desc:'单元格class,fn({row,rowIndex,col,colIndex})'
+        cellClass: {
+            type: String | Object | Array | Function,
+            default: null,
+            desc: '单元格class,fn({row,rowIndex,col,colIndex})'
         },
-        headerRowStyle:{
-            type:Object|Function,
-            default:null,
-            desc:'表头 行样式,fn({row,rowIndex)}'
+        headerRowStyle: {
+            type: Object | Function,
+            default: null,
+            desc: '表头 行样式,fn({row,rowIndex)}'
         },
-        headerRowClass:{
-            type:String|Object|Array|Function,
-            default:null,
-            desc:'表头行class,fn({row,rowIndex)}'
+        headerRowClass: {
+            type: String | Object | Array | Function,
+            default: null,
+            desc: '表头行class,fn({row,rowIndex)}'
         },
-        headerCellStyle:{
-            type:Object|Function,
-            default:null,
-            desc:'表头单元格样式,fn({row,rowIndex,col,colIndex})'
+        headerCellStyle: {
+            type: Object | Function,
+            default: null,
+            desc: '表头单元格样式,fn({row,rowIndex,col,colIndex})'
         },
-        headerCellClass:{
-            type:String|Object|Array|Function,
-            default:null,
-            desc:'表头单元格class,fn({row,rowIndex,col,colIndex})'
+        headerCellClass: {
+            type: String | Object | Array | Function,
+            default: null,
+            desc: '表头单元格class,fn({row,rowIndex,col,colIndex})'
         },
 
-        enableHighlightCol:{
-            type:Boolean,
-            default:false,
+        enableHighlightCol: {
+            type: Boolean,
+            default: false,
         },
-        highlightColHeaderCellStyle:{
-            type:Object,
-            default:null
+        highlightColHeaderCellStyle: {
+            type: Object,
+            default: null
         },
-        highlightColRowCellStyle:{
-            type:Object,
-            default:null
+        highlightColRowCellStyle: {
+            type: Object,
+            default: null
         },
     },
     components: {
@@ -191,8 +210,8 @@ export default {
         this._globalTableId = getTableId();
         this.headerStyleElm = document.createElement('style');
         document.body.appendChild(this.headerStyleElm);
-        this.headerStyleElm.setAttribute('use-for-table-'+this._globalTableId,"");
-        this.$once('hook:beforeDestroy',()=>{
+        this.headerStyleElm.setAttribute('use-for-table-' + this._globalTableId, "");
+        this.$once('hook:beforeDestroy', () => {
             document.body.removeChild(this.headerStyleElm)
         })
         return {
@@ -417,30 +436,27 @@ export default {
                 return null;
             }
         },
+        //获取一个row,可以是key值
         getRow(row) {
-            return this.tableData.find(i => {
+            return this.store.flatDfsData.find(i => {
                 if (!row) return false;
                 if (typeof row === 'object') {
-                    if (i === row) {
-                        return true;
-                    } else {
-                        let key1 = this.getRowKey(i), key2 = this.getRowKey(row);
-                        return !!(isDefined(key1) && isDefined(key2) && key1 === key2);
-                    }
+                    return i === row;
                 } else { //默认row是id值
                     return this.getRowKey(i) === row;
                 }
             })
         },
 
-        //设置当前行
+
+        //设置当前行, 仅渲染生效
         setCurrentRow(row) {
             const store = this.store;
             row = this.getRow(row);
             if (!row) return;
             if (row !== store.selectRow) {
                 store.selectRow = row;
-                store.selectIdx = this.tableData.findIndex(i => i === row);
+                store.selectIdx = store.renderList.findIndex(i => i === row);
             } else {
                 store.selectRow = null;
                 store.selectIdx = null;
@@ -451,35 +467,71 @@ export default {
             this.store.selectRow = this.store.selectIdx = null;
         },
 
+
         //勾选节点
         toggleRowChecked(row, checked) {
-            const store = this.store, checkedRows = store.checkedRows;
+            const store = this.store, checkedSet = store.checkedSet, self = this;
             row = this.getRow(row);
             if (!row) return;
-            let change = false, i = checkedRows.indexOf(row);
+            let change = false, has = checkedSet.has(row);
             if (isDefined(checked)) { //指定了状态
                 checked = Boolean(checked)
             } else { //未指定，toggle
-                checked = i === -1
+                checked = !has
             }
-            if (checked && i === -1) {
-                checkedRows.push(row);
-                store.checkNums++;
+            if (checked && !has) {
+                checkedSet.add(row);
                 change = true;
-            } else if (!checked && i !== -1) {
-                checkedRows.splice(i, 1);
-                store.checkNums--;
+            } else if (!checked && has) {
+                checkedSet.delete(row);
                 change = true;
             }
-            change && this.store.checkTrigger++;
+            if (change) {
+                const treeNode = store.treeData.get(row);
+                if (treeNode) { //是树形节点
+                    //process children
+                    const children = row[this.childrenKey];
+                    if (children && children.length) {
+                        const flatChildren = treeToArray(children, this.childrenKey);
+                        flatChildren.forEach(child => {
+                            checkedSet[checked ? 'add' : 'delete'](child);
+                        })
+                    }
+                    //process parent
+                    let parent = treeNode.parent;
+                    while (parent) {
+                        const oldStatus = checkedSet.has(parent);
+                        const newStatus = checkParent(parent);
+                        if (oldStatus === newStatus) break;
+                        if (newStatus) { //之前没勾选.现在勾选
+                            checkedSet.add(parent);
+                        } else { //现在不勾选
+                            checkedSet.delete(parent);
+                        }
+                        const pNode = store.treeData.get(parent);
+                        pNode && (parent = pNode.parent);
+                    }
+                }
+                store.checkNums = checkedSet.size;
+                //节点勾选不改变渲染列表
+                this.store.checkTrigger++;
+                this.$emit('check', row, checked);
+            }
+            function checkParent(parent) {
+                const children = parent[self.childrenKey];
+                const checkItem = children.find(child => checkedSet.has(child));
+                const unCheckItem = children.find(child => !checkedSet.has(child));
+                return checkItem && !unCheckItem
+            }
         },
         setAllChecked(check) {
             check = Boolean(check);
-            this.store.checkedRows = check ? [...this.tableData] : [];
-            this.store.checkNums = check ? this.tableData.length : 0;
+            this.store.checkedSet = check ? new Set(this.store.flatDfsData) : new Set();
+            this.store.checkNums = check ? this.store.flatDfsData.length : 0;
             this.store.checkTrigger++;
         },
-        //展开节点
+
+        //展开节点, 不渲染也能展开(树的子节点展开,树未展开)
         toggleRowExpanded(row, expanded) {
             const store = this.store, expandedRows = store.expandedRows;
             row = this.getRow(row);
@@ -497,12 +549,56 @@ export default {
                 expandedRows.splice(i, 1);
                 change = true;
             }
-            change && this.store.expandTrigger++;
+            if (change) {
+                //展开节点不改变渲染列表,
+                this.store.expandTrigger++;
+                this.$emit('expand-change', row, expanded);
+            }
         },
         setAllExpanded(expanded) {
             expanded = Boolean(expanded);
-            this.store.expandedRows = expanded ? [...this.tableData] : [];
+            //expandedrows 会触发render
+            this.store.expandedRows = expanded ? [...this.store.flatDfsData] : [];
         },
+
+        //展开树节点
+        toggleTreeExpanded(row, expanded) {
+            const store = this.store, treeMap = store.treeData;
+            row = this.getRow(row);
+            if (!row) return;
+            const treeNode = treeMap.get(row);
+            if (!treeNode) return;
+            if (isDefined(expanded)) {
+                expanded = Boolean(expanded)
+            } else {
+                expanded = !treeNode.treeExpand
+            }
+            let change = false;
+            if (expanded && !treeNode.treeExpand) { //展开,顺着父节点一直展开到root
+                if (!treeNode.isLeaf) {
+                    treeNode.treeExpand = true;
+                    store.treeExpandedSet.add(row);
+                }
+                let p = treeNode.parent;
+                while (p) {
+                    store.treeExpandedSet.add(p);
+                    const pNode = treeMap.get(p);
+                    pNode.treeExpand = true;
+                    p = pNode.parent
+                }
+                change = true;
+            } else if (!expanded && treeNode.treeExpand && !treeNode.isLeaf) {
+                treeNode.treeExpand = false;
+                store.treeExpandedSet.delete(row);
+                change = true;
+            }
+            if (change) {
+                //会导致渲染列表变化,重新渲染
+                store.renderListTrigger++;
+                this.$emit('tree-expand-change', row, expanded);
+            }
+        },
+
         //获取排序的列节点
         getSortColumnNodes() {
             return this.store.sortColumns;
@@ -520,55 +616,16 @@ export default {
             });
             const store = this.store;
             store.hoverIdx = store.hoverRow = null;
-            //update select
-            {
-                const idx = newly.indexOf(store.selectRow);
-                if (idx !== -1) {
-                    store.selectIdx = idx;
-                } else {
-                    store.selectRow = store.selectIdx = null;
-                }
-            }
-            //update check
-            {
-                const oldChecks = store.checkedRows;
-                let newChecks = store.checkedRows = [];
-                this.tableData.forEach(row => {
-                    let i = oldChecks.indexOf(row);
-                    if (i !== -1) {
-                        newChecks.push(row);
-                        oldChecks.splice(i, 1);
-                    }
-                });
-                this.store.checkNums = newChecks.length;
-                oldChecks.length && this.store.checkTrigger++;
-            }
-            //update expand
-            {
-                const oldExpandRows = store.expandedRows;
-                let newExpandRows = store.expandedRows = [];
-                this.tableData.forEach(row => {
-                    let i = oldExpandRows.indexOf(row);
-                    if (i !== -1) {
-                        newExpandRows.push(row);
-                        oldExpandRows.splice(i, 1);
-                    }
-                });
-                oldExpandRows.length && this.store.expandTrigger++;
-            }
+            //更新树节点map,要开启树结构必须指定childrenKey
+            this.childrenKey && store.updateTreeDataMap();
+            //更新树结构的深度遍历list
+            store.flatDfsData = treeToArray(newly, this.childrenKey, true); //flat arr
+            //更新待渲染列表
+            //更新渲染列表
+            store.renderListTrigger++;
         },
     },
     watch: {
-        'store.checkTrigger': {
-            handler: function () {
-                this.$emit('check-change', [...this.store.checkedRows]);
-            }
-        },
-        'store.expandTrigger': {
-            handler: function () {
-                this.$emit('expand-change', [...this.store.expandedRows]);
-            }
-        },
         tableCols: {
             handler: function (cols) {
                 if (cols && cols.length) {

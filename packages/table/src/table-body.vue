@@ -17,14 +17,14 @@ export default {
         ...mapping('store', {
             leafColumns: store => store.leafColumns || [],
             tableBodyWidth: store => store.tableBodyWidth || 0,
+            renderList: 'renderList',
+            flatDfsData: 'flatDfsData',
+            treeData: 'treeData',
+            expandedRows: 'expandedRows'
         }),
-        tableData() {
-            return this.table.tableData || [];
-        }
     },
     render(h) {
         const columns = this.leafColumns,
-            data = this.tableData,
             expandRender = this.table.expandRender || this.table.$scopedSlots.expand;
         const colGroup = (<colgroup>
             {
@@ -33,22 +33,20 @@ export default {
                 })
             }
         </colgroup>);
-        const trs = data.map((row, idx) => {
+        const trs = this.renderList.map((row, idx) => {
             const key = this.table.getRowKey(row);
             let trVnode, expandVnode;
             const trData = {
                 attrs: {
                     row: row,
                     idx: idx,
-                    fixed: this.fixed
+                    fixed: this.fixed,
+                    treeNodeData: this.treeData.get(row),
                 },
                 key: key ? '_row_' + key : undefined,
             }
             trVnode = <BodyTrRender {...trData}/>;
-            if (
-                (expandRender || this.table.$scopedSlots.expand)
-                && this.store.expandedRows.indexOf(row) !== -1
-            ) {
+            if (expandRender && this.expandedRows.indexOf(row) !== -1) {
                 const expandData = {
                     attrs: {row: row, idx: idx},
                     key: key ? '_expand_row_' + key : undefined
@@ -79,16 +77,28 @@ export default {
         return table;
     },
     watch: {
-        //tableData change will rerender,but expand row may not change
-        'store.expandTrigger':{
-            handler:function(){
-                this.$nextTick(()=>{
+        'store.treeExpandTrigger': {
+            handler: function () {
+                this.$nextTick(() => {
+                    const elms = this.$el.querySelectorAll('tr.row');
+                    const expands = this.store.treeExpandedSet;
+                    this.renderList.forEach((row, idx) => {
+                        expands.has(row)
+                            ? addClass(elms[idx], 'is-tree-expanded')
+                            : removeClass(elms[idx], 'is-tree-expanded')
+                    });
+                })
+            }
+        },
+        'store.expandTrigger': {
+            handler: function () {
+                this.$nextTick(() => {
                     const elms = this.$el.querySelectorAll('tr.row');
                     const expands = this.store.expandedRows;
-                    this.tableData.forEach((row,idx)=>{
+                    this.renderList.forEach((row, idx) => {
                         expands.indexOf(row) !== -1
-                            ? addClass(elms[idx],'is-expanded')
-                            : removeClass(elms[idx],'is-expanded')
+                            ? addClass(elms[idx], 'is-expanded')
+                            : removeClass(elms[idx], 'is-expanded')
                     })
                 })
             }
@@ -97,12 +107,29 @@ export default {
             handler: function () {
                 this.$nextTick(() => {
                     const elms = this.$el.querySelectorAll('tr.row');
-                    const checks = this.store.checkedRows;
-                    this.tableData.forEach((row, idx) => {
-                        checks.indexOf(row) !== -1
+                    const {checkedSet,treeData} = this.store;
+                    this.renderList.forEach((row, idx) => {
+                        let i = treeData.get(row);
+                        if(i && !i.isLeaf){ //非叶子树节点
+                            const children = i.children;
+                            const check = children.find(item => checkedSet.has(item));
+                            const uncheck = children.find(item => !checkedSet.has(item));
+                            if(check && !uncheck){ //全选
+                                addClass(elms[idx],'is-checked');
+                                removeClass(elms[idx],'is-indeterminate');
+                            }else if(check && uncheck){ //半选
+                                addClass(elms[idx],'is-indeterminate');
+                                removeClass(elms[idx],'is-checked');
+                            }else{
+                                removeClass(elms[idx],'is-checked');
+                                removeClass(elms[idx],'is-indeterminate');
+                            }
+                            return;
+                        }
+                        checkedSet.has(row)
                             ? addClass(elms[idx], 'is-checked')
                             : removeClass(elms[idx], 'is-checked')
-                    })
+                    });
                 })
             }
         },

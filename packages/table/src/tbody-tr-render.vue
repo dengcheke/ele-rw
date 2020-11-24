@@ -1,11 +1,11 @@
 <script type="text/jsx">
-import {mapping} from "@src/utils/index";
-import {resolveClass, resolveStyle} from "ele-rw-ui/packages/table/src/store";
+import {mapping, throttle} from "@src/utils/index";
+import {resolveClass, resolveStyle} from "ele-rw-ui/packages/table/src/utils";
 
 export default {
     name: "tbody-tr-render",
     inject: ['table', 'store'],
-    props: ['row', 'idx', 'fixed'],
+    props: ['row', 'idx', 'fixed', 'treeNodeData'],
     computed: {
         ...mapping('store', {
             leafColumns: store => store.leafColumns || [],
@@ -13,8 +13,13 @@ export default {
     },
     methods: {
         handleClickRow(e) {
-            const row = this.row;
-            this.table.setCurrentRow(row);
+            const row = this.row, store = this.store;
+            if (row === store.selectRow) {
+                store.selectRow = store.selectIdx = null;
+            } else {
+                store.selectRow = row;
+                store.selectIdx = this.idx;
+            }
             let target = e.target, col;
             if (target.tagName.toLowerCase() === 'tr') {
                 target = null;
@@ -29,10 +34,10 @@ export default {
             }
             this.table.dispatchEvent('click-row', {row: row, column: col, event: e});
         },
-        handleEnterRow(e) {
+        handleEnterRow: throttle(function (e) {
             this.store.hoverRow = this.row;
             this.store.hoverIdx = this.idx;
-        },
+        }, 30, {leading: true, trailing: false}),
         handleCheck(e) {
             e.stopPropagation();
             this.table.toggleRowChecked(this.row);
@@ -40,27 +45,120 @@ export default {
         handleExpanded(e) {
             e.stopPropagation();
             this.table.toggleRowExpanded(this.row);
+        },
+        handleTreeExpanded(e) {
+            e.stopPropagation();
+            this.table.toggleTreeExpanded(this.row)
+        },
+        getTrStyle() {
+            const {rowStyle} = this.table, args = {row: this.row, rowIndex: this.idx};
+            let trStyle = {};
+            if (rowStyle) {
+                trStyle = resolveStyle(rowStyle, args);
+            }
+            return trStyle;
+        },
+        getTrClass() {
+            const {rowClass} = this.table, args = {row: this.row, rowIndex: this.idx};
+            let trClass = {row: true};
+            if (rowClass) {
+                trClass = {
+                    ...trClass,
+                    ...resolveClass(rowClass, args)
+                };
+            }
+            if (this.treeNodeData) {
+                trClass[`row-level--${this.treeNodeData.level}`] = true;
+            }
+            return trClass
+        },
+        getCellClass(colNode, args) {
+            let _cellClass = {}
+            if (this.table.cellClass) {
+                _cellClass = resolveClass(this.table.cellClass, args);
+            }
+            if (colNode.col.cellClass) {
+                _cellClass = {
+                    ..._cellClass,
+                    ...resolveClass(colNode.col.cellClass, args)
+                }
+            }
+            _cellClass.cell = true;
+            return _cellClass;
+        },
+        getCellStyle(colNode, args) {
+            let _cellStyle = {
+                alignItems: colNode.align || this.table.align
+            };
+            if (this.table.cellStyle) {
+                _cellStyle = resolveStyle(this.table.cellStyle, args);
+            }
+            if (colNode.col.cellStyle) {
+                _cellStyle = {
+                    ..._cellStyle,
+                    ...resolveStyle(colNode.col.cellStyle, args)
+                }
+            }
+            return _cellStyle
+        },
+        getCellContent(h, colNode, args) {
+            let cellContent, addExpandNode = false;
+            if (colNode.render && typeof colNode.render === "function") {
+                cellContent = colNode.render(h, args);
+            } else if (colNode.type === 'text') {
+                cellContent = this.row[colNode.key];
+                addExpandNode = true;
+            } else if (colNode.type === 'check') {
+                cellContent = <span {...{
+                    class: ['cell-checkbox'],
+                    on: {
+                        click: this.handleCheck
+                    }
+                }}/>
+                addExpandNode = true;
+            } else if (colNode.type === 'expand') {
+                cellContent = <span {...{
+                    class: ['iconfont', 'icon-expand', 'use-for-expand'],
+                    style: {
+                        display: 'inline-block',
+                        fontSize: '18px',
+                    },
+                    on: {
+                        click: this.handleExpanded
+                    }
+                }}/>
+            }
+            //对于展开的节点列 文本列和check添加展开按钮
+            if (addExpandNode && this.table.treeNodeKey === colNode.key) {
+                const level = this.treeNodeData ? this.treeNodeData.level : 0;
+                cellContent = <div style={{
+                    marginLeft: this.table.indent * level + 'px',
+                    paddingLeft: '22px',
+                    position: "relative"
+                }}>
+                    {[<span {...{
+                            class: {
+                                iconfont: true,
+                                'icon-expand': this.treeNodeData && !this.treeNodeData.isLeaf,
+                                'use-for-tree': true
+                            },
+                            on: {
+                                click: this.handleTreeExpanded
+                            }
+                        }}/>, cellContent]}
+                </div>
+            }
+            return cellContent
         }
     },
     render: function (h) {
         const columns = this.leafColumns,
             fixed = this.fixed,
             idx = this.idx,
-            row = this.row,
-            {rowStyle, rowClass, cellStyle, cellClass} = this.table;
-        let trStyle = {}, trClass = {}, args = {row: row, rowIndex: idx};
-        if (rowStyle) {
-            trStyle = resolveStyle(rowStyle, args);
-        }
-        if (rowClass) {
-            trClass = resolveClass(rowClass, args);
-        }
+            row = this.row;
         const trAttr = {
-            class: {
-                row: true,
-                ...trClass
-            },
-            style: trStyle,
+            class: this.getTrClass(),
+            style: this.getTrStyle(),
             attrs: {
                 'data-row-index': idx
             },
@@ -81,65 +179,22 @@ export default {
                     key: colNode.key
                 };
                 const col = colNode.col;
-                let _cellStyle = {}, _cellClass = {}, args = {row: row, rowIndex: idx, col: col, colIndex: colIndex};
+                const args = {row: row, rowIndex: idx, col: col, colIndex: colIndex};
                 //span method
                 if (this.table.spanMethod && colNode.type === 'text') {
                     const res = this.table.spanMethod.call(null, args)
                     if (res) {
-                        if(res[0]===0||res[1]===0) return undefined;
+                        if (res[0] === 0 || res[1] === 0) return undefined;
                         tdAttr.attrs.rowspan = res[0];
                         tdAttr.attrs.colspan = res[1];
                     }
                 }
-                //cell style
-                if (cellStyle) {
-                    _cellStyle = resolveStyle(cellStyle, args);
-                }
-                if (col.cellStyle) {
-                    _cellStyle = {
-                        ..._cellStyle,
-                        ...resolveStyle(col.cellStyle, args)
-                    }
-                }
-                if (cellClass) {
-                    _cellClass = resolveClass(cellClass, args);
-                }
-                if (col.cellClass) {
-                    _cellClass = {
-                        ..._cellClass,
-                        ...resolveClass(col.cellClass, args)
-                    }
-                }
-
                 //cell content
-                let cellContent;
-                if (colNode.render && typeof colNode.render === "function") {
-                    cellContent = colNode.render(h, args);
-                } else if (colNode.type === 'text') {
-                    cellContent = row[colNode.key];
-                } else if (colNode.type === 'check') {
-                    cellContent = <span {...{
-                        class: ['cell-checkbox'],
-                        on: {
-                            click: this.handleCheck
-                        }
-                    }}/>
-                } else if (colNode.type === 'expand') {
-                    cellContent = <span {...{
-                        class: ['cell-expand'],
-                        on: {
-                            click: this.handleExpanded
-                        }
-                    }}/>
-                }
-
+                const cellContent = this.getCellContent(h, colNode, args);
                 return <td {...tdAttr}>
                     <div {...{
-                        style: _cellStyle,
-                        class: {
-                            "cell": true,
-                            ..._cellClass
-                        }
+                        style: this.getCellStyle(colNode, args),
+                        class: this.getCellClass(colNode, args)
                     }}>{cellContent}</div>
                 </td>
             }).filter(Boolean)}

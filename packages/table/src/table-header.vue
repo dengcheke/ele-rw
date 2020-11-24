@@ -1,8 +1,9 @@
 <script type="text/jsx">
-import {ASC, DESC, resolveClass, resolveStyle} from "./store";
+import {ASC, DESC} from "./store";
 import {mapping} from "@src/utils/index";
 import {addClass, removeClass} from "@src/utils/dom";
 import {objectToStyleString} from "@src/utils";
+import {resolveClass, resolveStyle} from "ele-rw-ui/packages/table/src/utils";
 
 export default {
     name: "table-header",
@@ -18,13 +19,49 @@ export default {
             columnLevelMap: store => store.columnLevelMap || {},
             leafColumns: store => store.leafColumns || [],
             tableBodyWidth: store => store.tableBodyWidth || 0,
-            checkedRows: store => store.checkedRows,
         }),
         tableData() {
             return this.table.tableData || [];
         }
     },
     methods: {
+        handleMouseEnter(e) {
+            //check prop
+            const {enableHighlightCol, highlightColHeaderCellStyle, highlightColRowCellStyle} = this.table;
+            if (!enableHighlightCol || (!highlightColHeaderCellStyle && !highlightColRowCellStyle)) return;
+            //find col
+            const target = e.currentTarget;
+            const colUid = target.dataset.colUid, colLevel = target.dataset.colLevel;
+            const _cols = this.columnLevelMap[colLevel];
+            if (!_cols) return;
+            const colNode = _cols.find(i => i._uid === colUid);
+            if (!colNode) return;
+
+            //go on
+            const styleElm = this.table.headerStyleElm;
+            let colUids = [colNode._uid], stack = [...colNode.children];
+            while (stack.length) {
+                const node = stack.shift();
+                colUids.push(node._uid);
+                stack = [...stack, ...node.children];
+            }
+            let hStyleStr = [], rStyleStr = [];
+            if (colUids.length) {
+                const headerStyle = objectToStyleString(highlightColHeaderCellStyle);
+                const cellStyle = objectToStyleString(highlightColRowCellStyle);
+                colUids.forEach(uid => {
+                    headerStyle && hStyleStr.push(`.ele-rw-table[uid='table_uid_${this.table._globalTableId}'] thead tr td[data-col-uid='${uid}'] .cell`)
+                    cellStyle && rStyleStr.push(`.ele-rw-table[uid='table_uid_${this.table._globalTableId}'] tbody tr td[data-col-uid='${uid}'] .cell`)
+                })
+                hStyleStr = hStyleStr.join(",\n") + `{\n${headerStyle}}`
+                rStyleStr = rStyleStr.join(",\n") + `{\n${cellStyle}}`
+                styleElm.innerHTML = hStyleStr + '\n' + rStyleStr;
+            }
+        },
+        handleMouseLeave(e) {
+            const styleElm = this.table.headerStyleElm;
+            styleElm.innerHTML = "";
+        },
         handleCheck(e) {
             e.stopPropagation();
             const checkNums = this.store.checkNums,
@@ -34,196 +71,178 @@ export default {
             } else {
                 this.table.setAllChecked(false);
             }
+        },
+        renderColGroup(h) {
+            return <colgroup>
+                {
+                    this.leafColumns.map(leafNode => {
+                        return <col key={leafNode.key} width={leafNode.width}/>
+                    })
+                }
+            </colgroup>
+        },
+        getTrStyle(args) {
+            let rowStyle = {};
+            if (this.table.headerRowStyle) {
+                rowStyle = resolveStyle(this.table.headerRowStyle, args);
+            }
+            return rowStyle
+        },
+        getTrClass(args) {
+            let rowClass = {};
+            if (this.table.headerRowClass) {
+                rowClass = resolveClass(this.table.headerRowClass, args);
+            }
+        },
+        getCellStyle(colNode, args) {
+            let _cellStyle = {
+                alignItems: colNode.headerAlign || this.table.align
+            };
+            if (this.table.headerCellStyle) {
+                _cellStyle = resolveStyle(this.table.headerCellStyle, args);
+            }
+            if (colNode.col.headerCellStyle) {
+                _cellStyle = {
+                    ..._cellStyle,
+                    ...resolveStyle(colNode.col.headerCellStyle, args)
+                }
+            }
+            return _cellStyle
+        },
+        getCellClass(colNode, args) {
+            let _cellClass = {}
+            if (this.table.headerCellClass) {
+                _cellClass = resolveClass(this.table.headerCellClass, args);
+            }
+            if (colNode.col.headerCellClass) {
+                _cellClass = {
+                    ..._cellClass,
+                    ...resolveClass(colNode.col.headerCellClass, args)
+                }
+            }
+            _cellClass.cell = true;
+            return _cellClass;
+        },
+        getCellContent(h, colNode, args, hasCheckCol) {
+            let headerRender = [], canSort = true;
+            if (colNode.renderHeader && typeof colNode.renderHeader === "function") {
+                headerRender = colNode.renderHeader(h, args);
+                canSort = false;
+            } else if (colNode.type === 'text') {
+                headerRender = [<span>{colNode.label}</span>];
+            } else if (colNode.type === 'check' && colNode.isLeaf) {
+                hasCheckCol.count++;
+                headerRender = [<span {...{
+                    class: ['cell-checkbox'],
+                    on: {
+                        click: this.handleCheck
+                    }
+                }}/>]
+            }
+            /*排序按钮*/
+            if (canSort && colNode.sortable) {
+                const ascAttrs = {
+                    class: {
+                        'sort-caret': true,
+                        'asc': true,
+                        'is-active': colNode.sort === ASC
+                    },
+                    on: {
+                        click: (e) => {
+                            if (colNode.sort === ASC) {
+                                colNode.sort = null;
+                            } else {
+                                colNode.sort = ASC;
+                            }
+                            this.table.dispatchEvent('sort-change', colNode, this.store.sortColumns);
+                        }
+                    }
+                }, descAttrs = {
+                    'class': {
+                        'sort-caret': true,
+                        'desc': true,
+                        'is-active': colNode.sort === DESC
+                    },
+                    on: {
+                        click: (e) => {
+                            if (colNode.sort === DESC) {
+                                colNode.sort = null;
+                            } else {
+                                colNode.sort = DESC;
+                            }
+                            this.table.dispatchEvent('sort-change', colNode, this.store.sortColumns);
+                        }
+                    }
+                };
+                const cartWrapper = <span class="sort-caret-wrapper">
+                                <i {...ascAttrs}/>
+                                <i {...descAttrs}/>
+                            </span>;
+                headerRender.push(cartWrapper)
+            }
+            return headerRender
         }
     },
     render(h) {
-        const table = this.table,
-            {
-                headerRowStyle,
-                headerRowClass,
-                headerCellStyle,
-                headerCellClass
-            } = table;
-        const colGroup = (<colgroup>
-            {
-                this.leafColumns.map(leafNode => {
-                    return <col key={leafNode.key} width={leafNode.width}/>
-                })
-            }
-        </colgroup>);
+        const colGroup = this.renderColGroup(h);
         const trs = [];
-        for (let level = 1; level <= this.maxLevel; level++) {
-            const columns = this.columnLevelMap[level], cols = columns.map(i => i.col);
-            let hasCheckCol = false;
+        for (let level = 0; level <= this.maxLevel; level++) {
+            const columns = this.columnLevelMap[level];
+            const cols = columns.map(i => i.col);
+            let hasCheckCol = {count: 0};
             const tds = columns.map((colNode, colIndex) => {
                 const col = colNode.col;
-                let cellStyle = {}, cellClass = {}, args = {
+                const args = {
                     row: cols,
-                    rowIndex: level - 1,
+                    rowIndex: level,
                     col: col,
                     colIndex: colIndex
                 };
-                if (headerCellStyle) { //global
-                    cellStyle = resolveStyle(headerCellStyle, args)
-                }
-                if (col.headerCellStyle) {
-                    cellStyle = {
-                        ...cellStyle,
-                        ...resolveStyle(col.headerCellStyle, args)
-                    }
-                }
-                if (headerCellClass) {
-                    cellClass = resolveClass(cellClass, args);
-                }
-                if (col.headerCellClass) {
-                    cellClass = {
-                        ...cellClass,
-                        ...resolveClass(col.headerCellClass, args)
-                    }
-                }
+                const cellContent = this.getCellContent(h, colNode, args, hasCheckCol)
                 const tdAttr = {
-                    'class': {
+                    class: {
                         'is-hidden': colNode.fixed !== this.fixed,
                         'is-leaf': colNode.isLeaf,
                     },
                     style: {
                         borderRight: colNode._noRightBorder ? 'none' : null,
-                        textAlign: colNode.align || 'center',
+                        textAlign: colNode.headerAlign || this.table.align,
                     },
                     key: colNode.key,
                     attrs: {
-                        rowspan: colNode.isLeaf ? this.maxLevel - colNode.level + 1 : 1,
+                        rowspan: colNode.isLeaf ? this.maxLevel - colNode.level : 1,
                         colspan: colNode.leafNum || 1,
-                        'data-col-uid': colNode._uid
+                        'data-col-uid': colNode._uid,
+                        'data-col-level': colNode.level
                     },
                     on: {
-                        mouseenter: (e) => {
-                            const {
-                                enableHighlightCol,
-                                highlightColHeaderCellStyle,
-                                highlightColRowCellStyle
-                            } = this.table;
-                            if (!enableHighlightCol || (!highlightColHeaderCellStyle && !highlightColRowCellStyle)) return;
-                            const styleElm = this.table.headerStyleElm;
-                            let colUids = [colNode._uid], stack = [...colNode.children];
-                            while (stack.length) {
-                                const node = stack.shift();
-                                colUids.push(node._uid);
-                                stack = [...stack, ...node.children];
-                            }
-                            let hStyleStr = [], rStyleStr = [];
-                            if (colUids.length) {
-                                const headerStyle = objectToStyleString(highlightColHeaderCellStyle);
-                                const cellStyle = objectToStyleString(highlightColRowCellStyle);
-                                colUids.forEach(uid => {
-                                    headerStyle && hStyleStr.push(`.ele-rw-table[uid='table_uid_${this.table._globalTableId}'] thead tr td[data-col-uid='${uid}'] .cell`)
-                                    cellStyle && rStyleStr.push(`.ele-rw-table[uid='table_uid_${this.table._globalTableId}'] tbody tr td[data-col-uid='${uid}'] .cell`)
-                                })
-                                hStyleStr = hStyleStr.join(",\n") + `{\n${headerStyle}}`
-                                rStyleStr = rStyleStr.join(",\n") + `{\n${cellStyle}}`
-                                styleElm.innerHTML = hStyleStr + '\n' + rStyleStr;
-                            }
-                        },
-                        mouseleave: (e) => {
-                            const styleElm = this.table.headerStyleElm;
-                            styleElm.innerHTML = "";
-                        }
+                        mouseenter: this.handleMouseEnter,
+                        mouseleave: this.handleMouseLeave
                     }
                 };
-                let headerRender = [];
-                if (colNode.renderHeader && typeof colNode.renderHeader === "function") {
-                    headerRender = [colNode.renderHeader(h, {col: colNode.col, colIndex: colIndex})];
-                } else if (colNode.type === 'text') {
-                    headerRender = [<span>{colNode.label}</span>];
-                } else if (colNode.type === 'check') {
-                    hasCheckCol = true;
-                    headerRender = [<span {...{
-                        class: {
-                            'cell-checkbox': true,
-                        },
-                        on: {
-                            click: this.handleCheck
-                        }
-                    }}/>]
-                }
-                /*排序按钮*/
-                if (colNode.sortable) {
-                    const ascAttrs = {
-                            'class': {
-                                'sort-caret': true,
-                                'asc': true,
-                                'is-active': colNode.sort === ASC
-                            },
-                            on: {
-                                click: (e) => {
-                                    if (colNode.sort === ASC) {
-                                        colNode.sort = null;
-                                    } else {
-                                        colNode.sort = ASC;
-                                    }
-                                    this.table.dispatchEvent('sort-change', colNode, this.store.sortColumns);
-                                }
-                            }
-                        },
-                        descAttrs = {
-                            'class': {
-                                'sort-caret': true,
-                                'desc': true,
-                                'is-active': colNode.sort === DESC
-                            },
-                            on: {
-                                click: (e) => {
-                                    if (colNode.sort === DESC) {
-                                        colNode.sort = null;
-                                    } else {
-                                        colNode.sort = DESC;
-                                    }
-                                    this.table.dispatchEvent('sort-change', colNode, this.store.sortColumns);
-                                }
-                            }
-                        };
-                    const cartWrapper = <span class="sort-caret-wrapper">
-                                <i {...ascAttrs}></i>
-                                <i {...descAttrs}></i>
-                            </span>;
-                    headerRender = [...headerRender, cartWrapper]
-                }
                 return <td {...tdAttr}>
                     <div {...{
-                        class: {
-                            cell: true,
-                            ...cellClass
-                        },
-                        style: cellStyle
+                        class: this.getCellClass(colNode, args),
+                        style: this.getCellStyle(colNode, args)
                     }}>
-                        {headerRender}
+                        {cellContent}
                     </div>
                 </td>
             });
-            let rowStyle = {}, rowClass = {}, args = {
-                row: cols,
-                rowIndex: level - 1,
-            };
-            if (headerRowStyle) {
-                rowStyle = resolveStyle(headerRowStyle, args);
-            }
-            if (headerRowClass) {
-                rowClass = resolveClass(headerRowClass, args);
-            }
+            const args = {row: cols, rowIndex: level};
             trs.push(<tr {...{
                 class: {
-                    'has-check': hasCheckCol,
-                    ...rowClass
+                    'has-check': !!hasCheckCol.count,
+                    ...this.getTrClass(args)
                 },
-                style: rowStyle,
+                style: this.getTrStyle(args),
             }}>{tds}</tr>);
         }
-        return <table class="table__header"
-                      attrs={{
-                          cellspacing: "0",
-                          cellpadding: "0",
-                          border: "0"
-                      }}
+        return <table class="table__header" attrs={{
+            cellspacing: "0",
+            cellpadding: "0",
+            border: "0"
+        }}
                       style={{width: this.tableBodyWidth + 'px'}}>
             {colGroup}
             <thead>
@@ -238,12 +257,15 @@ export default {
                     const tr = this.$el.querySelector('tr.has-check');
                     if (!tr) return;
                     const checkNums = this.store.checkNums,
-                        totalNums = this.tableData.length;
-                    removeClass(tr, ['is-checked', 'is-indeterminate']);
+                        totalNums = this.store.flatDfsData.length;
                     if (checkNums === totalNums) {
                         addClass(tr, 'is-checked');
+                        removeClass(tr, 'is-indeterminate');
                     } else if (checkNums && checkNums < totalNums) {
                         addClass(tr, 'is-indeterminate');
+                        removeClass(tr, 'is-checked');
+                    } else {
+                        removeClass(tr, ['is-checked', 'is-indeterminate']);
                     }
                 })
 

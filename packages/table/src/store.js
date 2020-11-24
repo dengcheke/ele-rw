@@ -1,29 +1,18 @@
 import Vue from 'vue';
 import {isDefined} from "@src/utils/index";
-import {getScrollBarWidth, on} from "@src/utils/dom";
+import {
+    getColId,
+    isNotEmptyArray,
+    moveItemNewHasInOld,
+    parseWidth,
+    walkTreeNode
+} from "ele-rw-ui/packages/table/src/utils";
 
-export const barWidthOb = Vue.observable({
-    barWidth: Math.ceil(getScrollBarWidth())
-})
-let _dpr = window.devicePixelRatio;
-on(window, 'resize', () => {
-    const dpr = window.devicePixelRatio;
-    if (dpr != _dpr) {
-        _dpr = dpr;
-        barWidthOb.barWidth = Math.ceil(getScrollBarWidth());
-    }
-})
-
-const LEFT = "left", Middle = "middle", RIGHT = "right";
+export const LEFT = "left", Middle = "middle", RIGHT = "right";
 export const ASC = "asc", DESC = 'desc';
 
-let tableGlobalId = 0;
-export function getTableId(){
-    return ++tableGlobalId
-}
-let colGlobalId = 0;
 
-function ColumnNode(col) {
+export function ColumnNode(col) {
     const node = {
         type: col.type || 'text',//check expand
         key: col.key,//键,字段的值,
@@ -31,11 +20,13 @@ function ColumnNode(col) {
         render: col.render,//渲染函数 cell
         renderHeader: col.renderHeader,//表头渲染函数
         sortable: !!col.sortable,//是否排序
-        sort: col.sort,//当前排序方式 asc / desc
-        level: 1,//节点等级,从上往下增加,根为1
-        levelIndex: null, //在当前层的col索引位置
+        sort: null,//当前排序方式 asc / desc
+        level: 0,//节点等级,从上往下增加,根为0
+        levelIndex: null, //在当前层的col索引位置 从0开始
         isLeaf: false,//是否是叶子节点
         leafNum: 0,//子节点中叶子数目
+        align: col.align || 'left', //对齐方式
+        headerAlign: col.headerAlign || 'left',
         width: 80,//真实宽度 px值
         fixed: col.fixed || Middle,//固定位置，默认中间
         parent: null,//父节点
@@ -44,105 +35,16 @@ function ColumnNode(col) {
         _noRightBorder: false, //表头td 没有右border
     };
     Object.defineProperty(node, '_uid', {
-        value: `col_${++colGlobalId}`,
+        value: `col_${getColId()}`,
     });
     return node;
 }
 
-/**
- * 获取宽度
- * @param v 当前宽度
- * @param W 整体宽度值
- * @returns {number}
- */
-export function parseWidth(v, W) {
-    const vStr = String(v);
-    v = parseFloat(vStr);
-    if (isNaN(v)) return 0;
-    if (vStr.indexOf('px') !== -1) { //100.5px, v = 100.5; 取整
-        return v >> 0;
-    } else if (vStr.indexOf('%') !== -1) { //20.5% v = 20.5, W * 20.5% 然后取整
-        return (W * v / 100) >> 0;
-    } else {
-        return v >> 0;
-    }
-}
-
-const _toString = Object.prototype.toString,
-    _Object = '[object Object]',
-    _Function = '[object Function]';
-
-//获取样式 object|function
-export function resolveStyle(style, ...args) {
-    if(!style) return {};
-    let s, type = _toString.call(style);
-    if (type === _Object) {
-        s = style
-    } else if (type === _Function) {
-        s = style.call(null, args);
-        if (_toString.call(s) !== _Object) {
-            console.warn('style must return object,your return is:',s,style)
-            s = {}
-        }
-    } else {
-        console.warn('style must be object, your style:',style)
-        s = {};
-    }
-    return s;
-}
-
-//获取class string | array<string> | function
-export function resolveClass(clazz, ...args) {
-    if(!clazz) return {};
-    let c, type = _toString.call(clazz);
-    if (type === _Object) {
-        c = clazz
-    } else if (type === _Function) {
-        c = clazz.call(null, args)
-        if (_toString.call(c) === _Function) {
-            c = {}
-        } else {
-            c = resolveClass(c)
-        }
-    } else if (Array.isArray(clazz)) {
-        c = clazz.reduce((res, cur) => {
-            res[String(cur)] = true;
-            return res;
-        }, {})
-    } else {
-        c = {[String(clazz)]: true}
-    }
-    return c;
-}
-
-export function mapping(attrName, mapper) {
-    const res = {};
-    Object.keys(mapper).forEach(key => {
-        const value = mapper[key];
-        let fn;
-        if (typeof value === 'string') {
-            fn = function () {
-                return this[attrName] ? this[attrName][value] : null;
-            };
-        } else if (typeof value === 'function') {
-            fn = function () {
-                return value.call(this, this[attrName]);
-            };
-        } else {
-            console.error('invalid value type');
-        }
-        if (fn) {
-            res[key] = fn;
-        }
-    });
-    return res;
-}
-
-
 const TableStore = Vue.extend({
     data() {
         this.table = null;
-        this.checkedRows = [];//所有勾选节点,
+        this.checkedSet = new Set();//所有勾选节点,checkrow 不影响渲染,只是添加标记class,非响应式
+        this.treeExpandedSet = new Set();//
         return {
             containerWidth: 0,//容器宽度,列宽%以此为基准
 
@@ -152,14 +54,18 @@ const TableStore = Vue.extend({
 
             //col info
             maxLevel: 0,//最大表头等级，（多级表头）
-            columnLevelMap: {},//每一层节点信息 { 1:[col1,col2...],
-                               //                2:[]       }
+            columnLevelMap: {},//每一层节点信息 { 0:[col1,col2...],
+                               //                1:[]       }
             leafColumns: [],//叶子节点数组,
             sortColumns: [],//所有排序的节点, sortable 为true的
             fixedLeftCount: 0,//左边固定列个数 ,一组算一个
             fixedRightCount: 0,//右边固定列个数
             fixedLeftWidth: 0,//左边固定总列宽
             fixedRightWidth: 0,//右边固定总列宽
+
+            flatDfsData: [],//tableData深度遍历的展开数据(包括动态添加的),
+            renderList: [],//当前渲染列表,tableData 展开数据一部分,包含treeExpand
+            renderListTrigger: 1,//更新renderlist trigger
 
             selectRow: null,
             selectIdx: null,
@@ -168,10 +74,24 @@ const TableStore = Vue.extend({
             hoverIdx: null,
 
             checkNums: 0,
-            checkTrigger: 1,
+            checkTrigger: 1, //勾选变化
 
-            expandedRows: [],
-            expandTrigger: 1,
+            expandedRows: [], //所有的展开行，不是treeNode展开, use in tbody render
+            expandTrigger: 1, //展开行变化
+
+
+            /*
+            树形row的map集合,
+            有子节点或者是非根叶子节点才会出现在里面
+            row:{
+                parent:,
+                children:[],
+                level:,
+                show:,
+                treeExpand:
+            }*/
+            treeData: new Map(),
+            treeExpandTrigger: 1
         }
     },
     methods: {
@@ -247,7 +167,7 @@ const TableStore = Vue.extend({
             const columnLevelMap = {}, leafColumns = [];
             const rootNodes = this.checkFixedCol(cols);
             const stack = [...rootNodes]; // 左  中 右
-            let maxLevel = 1;
+            let maxLevel = 0;
             while (stack.length) {
                 const node = stack.shift();
                 const col = node.col;
@@ -258,7 +178,7 @@ const TableStore = Vue.extend({
                     node.fixed = node.parent.fixed;
                     maxLevel = Math.max(node.level, maxLevel); //更新 maxLevel
                 } else {
-                    node.level = 1;
+                    node.level = 0;
                 }
                 if (columnLevelMap[node.level]) {
                     node.levelIndex = columnLevelMap[node.level].push(node) - 1;
@@ -336,7 +256,7 @@ const TableStore = Vue.extend({
             }, 0);
 
             //*********这一步可以不做
-            const ROOTS = this.columnLevelMap[1];
+            const ROOTS = this.columnLevelMap[0];
             ROOTS.forEach(node => {
                 !node.isLeaf && this._updateNodeWidthInfo(node);
             });
@@ -346,11 +266,97 @@ const TableStore = Vue.extend({
             this.fixedRightWidth = fixedRight;
         },
 
+        //when tableData change
+        updateTreeDataMap() {
+            const {tableData, childrenKey} = this.table;
+            const oldMap = this.treeData;
+            let map = this.treeData = new Map();
+            walkTreeNode(tableData, (row, parent, children, level) => {
+                if (isNotEmptyArray(children) || !!parent) {//有子节点或者是叶子节点
+                    const treeNodeData = {
+                        parent: parent,
+                        children: children,
+                        level: level,
+                        isLeaf: !!parent && !isDefined(children),
+                        show: null, //树节点是否可见
+                        treeExpand: null, //树节点是否展开(不可见也是可以展开的,保存展开状态)
+                    }
+                    const old = oldMap.get(row);
+                    if (old) {
+                        treeNodeData.show = old.show;
+                        treeNodeData.treeExpand = old.treeExpand;
+                    } else {
+                        treeNodeData.show = !treeNodeData.isLeaf;//根节点必定可见
+                        treeNodeData.treeExpand = false;
+                    }
+                    map.set(row, treeNodeData);
+                }
+            }, childrenKey);
+        },
+        updateRenderList() {
+            const treeMap = this.treeData, notExpandSet = new Set();
+            this.renderList = this.flatDfsData.map(row => {
+                if (!treeMap.has(row)) { //非树形节点,一定会渲染
+                    return row;
+                } else { //树形节点
+                    const selfNode = treeMap.get(row);
+                    if (selfNode.level === 0) { //树节点的根一定显示
+                        !selfNode.treeExpand && notExpandSet.add(row);
+                        return row;
+                    } else { //取决于父节点的treeExpand
+                        if (notExpandSet.has(selfNode.parent)) { //父元素没展开,自己不会显示
+                            notExpandSet.add(row);
+                            return false;
+                        } else { //父元素展开,自己可见
+                            if (!selfNode.isLeaf && !selfNode.treeExpand) {
+                                notExpandSet.add(row);
+                            }
+                            return row;
+                        }
+                    }
+                }
+            }).filter(Boolean);
+        },
+        //after treeMap and renderList update
+        updateSelect(){
+            const idx = this.renderList.indexOf(this.selectRow);
+            if (idx !== -1) {
+                this.selectIdx = idx;
+            } else {
+                this.selectRow = this.selectIdx = null;
+            }
+        },
+        updateTreeExpand(){
+            const oldTreeExpands = this.treeExpandedSet;
+            const newTreeExpands = this.treeExpandedSet = new Set();
+            moveItemNewHasInOld(this.flatDfsData,oldTreeExpands,newTreeExpands);
+            this.treeExpandTrigger++;
+        },
+        updateCheck(){
+            const oldChecks = this.checkedSet;
+            let newChecks = this.checkedSet = new Set();
+            moveItemNewHasInOld(this.flatDfsData,oldChecks,newChecks);
+            this.checkNums = newChecks.size;
+            this.checkTrigger++;
+        },
+        updateExpand(){
+            const oldExpandRows = this.expandedRows;
+            let newExpandRows = this.expandedRows = [];
+            moveItemNewHasInOld(this.flatDfsData,oldExpandRows,newExpandRows);
+            this.expandTrigger++;
+        }
     },
     watch: {
         containerWidth: function (v) {
             this.computedColWidth();//重新计算每列布局
         },
+        renderListTrigger: function () {
+            this.updateRenderList();
+            this.updateSelect();
+            this.updateTreeExpand();
+            this.updateCheck();
+            this.updateExpand();
+        }
     }
 });
 

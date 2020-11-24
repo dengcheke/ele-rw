@@ -1,0 +1,23 @@
+{
+  "id": "2221396",
+  "name": "elerw",
+  "font_family": "iconfont",
+  "css_prefix_text": "icon-",
+  "description": "",
+  "glyphs": [
+    {
+      "icon_id": "5747613",
+      "name": "Expand",
+      "font_class": "expand",
+      "unicode": "e727",
+      "unicode_decimal": 59175
+    },
+    {
+      "icon_id": "109756",
+      "name": "loading",
+      "font_class": "loading",
+      "unicode": "e62b",
+      "unicode_decimal": 58923
+    }
+  ]
+}
