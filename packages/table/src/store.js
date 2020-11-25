@@ -75,7 +75,7 @@ const TableStore = Vue.extend({
             fixedLeftWidth: 0,//左边固定总列宽
             fixedRightWidth: 0,//右边固定总列宽
 
-            flatDfsData: [],//tableData深度遍历的展开数据(包括动态添加的),
+            flatDfsData: [],//tableData深度遍历的展开数据,
             renderList: [],//当前渲染列表,tableData 展开数据一部分,包含treeExpand, expand
             renderListTrigger:1,//渲染列表变化
 

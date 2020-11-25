@@ -139,6 +139,7 @@ export function moveItemNewHasInOld(iter, older, newly) {
         throw new Error('??奇怪的类型')
     }
 }
+
 export function moveItemNewHasInOld_Array(iter, oldArr, arr) {
     iter.forEach(item => {
         let i = oldArr.indexOf(item);
@@ -148,6 +149,7 @@ export function moveItemNewHasInOld_Array(iter, oldArr, arr) {
         }
     });
 }
+
 export function moveItemNewHasInOld_Set(iter, oldSet, s) {
     iter.forEach(item => {
         if (oldSet.has(item)) {
@@ -156,29 +158,27 @@ export function moveItemNewHasInOld_Set(iter, oldSet, s) {
         }
     })
 }
+
 //****
 
 
 export const isNotEmptyArray = (array) => (Array.isArray(array) && array.length);
 
-//遍历树节点
-export function walkTreeNode(root, cb, childrenKey = 'children', lazyKey = 'hasChildren') {
-    function _walker(self, parent, children, level) {
-        cb(self, parent, children, level);
-        Array.isArray(children) && children.forEach(item => {
-            /*if (item[lazyKey]) {
-                cb(item, null, null, level + 1);
-                return;
-            }*/
-            _walker(item, self, item[childrenKey], level + 1);
-        });
+//遍历树节点,cb返回walkTreeNode.STOP停止遍历
+export const walkTreeNode = function (root, cb, childrenKey = 'children', dfs = true, startLevel = 0) {
+    let queue = [].concat(root).map(i => [i, null, startLevel]); //[self,parent,level]
+    while (queue.length) {
+        const [self, parent, level] = queue.shift();
+        const children = self[childrenKey];
+        const res = cb(self, parent, children, level);
+        if (res === walkTreeNode.STOP) break;
+        if (!Array.isArray(children)) continue;
+        const arr = children.map(i => [i, self, level + 1]);
+        queue = dfs
+            ? [...arr, ...queue]
+            : [...queue, ...arr]
     }
-
-    [].concat(root).forEach(item => {
-        /*if (item[lazyKey]) {
-            cb(item, null, null, 0);
-            return;
-        }*/
-        _walker(item, null, item[childrenKey], 0);
-    });
 }
+Object.defineProperty(walkTreeNode, 'STOP', {
+    value: Symbol()
+})

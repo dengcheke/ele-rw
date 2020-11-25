@@ -3,6 +3,7 @@ import {mapping} from "@src/utils/index";
 import BodyTrRender from './tbody-tr-render';
 import ExpandTrRender from './expand-tr-render';
 import {addClass, removeClass} from "@src/utils/dom";
+import {walkTreeNode} from "ele-rw-ui/packages/table/src/utils";
 
 export default {
     name: "table-body",
@@ -116,13 +117,21 @@ export default {
             this.$nextTick(() => {
                 const elms = this.$el.querySelectorAll('tr.row');
                 const {checkedSet, treeData} = this.store;
+                const {childrenKey} = this.table;
                 this.renderList.forEach((row, idx) => {
-                    if(Array.isArray(row)) return;
+                    if (Array.isArray(row)) return;
                     let i = treeData.get(row);
                     if (i && !i.isLeaf) { //非叶子树节点
                         const children = i.children;
-                        const check = children.find(item => checkedSet.has(item));
-                        const uncheck = children.find(item => !checkedSet.has(item));
+                        let check, uncheck;
+                        walkTreeNode(children, (row) => {
+                            if (checkedSet.has(row)) {
+                                check = true;
+                            } else {
+                                uncheck = true;
+                            }
+                            if (check && uncheck) return walkTreeNode.STOP;
+                        }, childrenKey, false);
                         if (check && !uncheck) { //全选
                             addClass(elms[idx], 'is-checked');
                             removeClass(elms[idx], 'is-indeterminate');
@@ -145,8 +154,8 @@ export default {
 
     watch: {
         // renderList更新后 即使state未变，但行索引可能变化
-        'store.renderListTrigger':{
-            handler:function(){
+        'store.renderListTrigger': {
+            handler: function () {
                 this.updateTreeExpandClass();
                 this.updateCheckClass();
                 this.updateExpandClass();
