@@ -17,15 +17,12 @@ export default {
         ...mapping('store', {
             leafColumns: store => store.leafColumns || [],
             tableBodyWidth: store => store.tableBodyWidth || 0,
-            renderList: 'renderList',
-            flatDfsData: 'flatDfsData',
-            treeData: 'treeData',
-            expandedRows: 'expandedRows'
+            renderList: store => store.renderList,
+            flatDfsData: store => store.flatDfsData,
         }),
     },
     render(h) {
-        const columns = this.leafColumns,
-            expandRender = this.table.expandRender || this.table.$scopedSlots.expand;
+        const columns = this.leafColumns, {getRowKey, tableData} = this.table;
         const colGroup = (<colgroup>
             {
                 columns.map(column => {
@@ -33,30 +30,46 @@ export default {
                 })
             }
         </colgroup>);
-        const trs = this.renderList.map((row, idx) => {
-            const key = this.table.getRowKey(row);
-            let trVnode, expandVnode;
-            const trData = {
-                attrs: {
-                    row: row,
-                    idx: idx,
-                    fixed: this.fixed,
-                    treeNodeData: this.treeData.get(row),
-                },
-                key: key ? '_row_' + key : undefined,
+        const trs = this.renderList.map((_row, domIdx) => {
+            let vnode, type, row;
+            if (Array.isArray(_row)) {
+                type = _row[0];
+                row = _row[1];
+            } else {
+                type = 'row';
+                row = _row;
             }
-            trVnode = <BodyTrRender {...trData}/>;
-            if (expandRender && this.expandedRows.indexOf(row) !== -1) {
+            const key = getRowKey(row);
+            const index = tableData.indexOf(row);
+            if (type === 'row') {
+                const trData = {
+                    attrs: {
+                        row: row,
+                        index: index, //数据index
+                        domIndex: domIdx, //dom index
+                        fixed: this.fixed,
+                        treeNodeData: this.store.treeData.get(row),
+                    },
+                    key: key ? '_row_' + key : undefined,
+                }
+                vnode = <BodyTrRender {...trData}/>;
+            } else if (type === 'expand') {
                 const expandData = {
-                    attrs: {row: row, idx: idx},
+                    attrs: {
+                        row: row,
+                        index: index,
+                        domIndex: domIdx
+                    },
                     key: key ? '_expand_row_' + key : undefined
                 }
-                expandVnode = <ExpandTrRender {...expandData}/>
+                vnode = <ExpandTrRender {...expandData}/>
+            } else {
+                throw new Error('Unexpected type');
             }
-            return [trVnode, expandVnode]
-        }).flat().filter(Boolean);
+            return vnode;
+        });
         const tableAttr = {
-            'class': {
+            class: {
                 'table__body': true
             },
             style: {
@@ -76,79 +89,94 @@ export default {
         </table>
         return table;
     },
-    watch: {
-        'store.treeExpandTrigger': {
-            handler: function () {
-                this.$nextTick(() => {
-                    const elms = this.$el.querySelectorAll('tr.row');
-                    const expands = this.store.treeExpandedSet;
-                    this.renderList.forEach((row, idx) => {
-                        expands.has(row)
-                            ? addClass(elms[idx], 'is-tree-expanded')
-                            : removeClass(elms[idx], 'is-tree-expanded')
-                    });
-                })
-            }
+    methods: {
+        updateTreeExpandClass() {
+            this.$nextTick(() => {
+                const elms = this.$el.querySelectorAll('tr.row');
+                const expands = this.store.treeExpandedSet;
+                this.renderList.forEach((row, idx) => {
+                    expands.has(row)
+                        ? addClass(elms[idx], 'is-tree-expanded')
+                        : removeClass(elms[idx], 'is-tree-expanded')
+                });
+            })
         },
-        'store.expandTrigger': {
-            handler: function () {
-                this.$nextTick(() => {
-                    const elms = this.$el.querySelectorAll('tr.row');
-                    const expands = this.store.expandedRows;
-                    this.renderList.forEach((row, idx) => {
-                        expands.indexOf(row) !== -1
-                            ? addClass(elms[idx], 'is-expanded')
-                            : removeClass(elms[idx], 'is-expanded')
-                    })
+        updateExpandClass() {
+            this.$nextTick(() => {
+                const elms = this.$el.querySelectorAll('tr.row');
+                const expands = this.store.expandedSet;
+                this.renderList.forEach((row, idx) => {
+                    row[0] === 'expand' && expands.has(row[1])
+                        ? addClass(elms[idx], 'is-expanded')
+                        : removeClass(elms[idx], 'is-expanded')
                 })
+            })
+        },
+        updateCheckClass() {
+            this.$nextTick(() => {
+                const elms = this.$el.querySelectorAll('tr.row');
+                const {checkedSet, treeData} = this.store;
+                this.renderList.forEach((row, idx) => {
+                    if(Array.isArray(row)) return;
+                    let i = treeData.get(row);
+                    if (i && !i.isLeaf) { //非叶子树节点
+                        const children = i.children;
+                        const check = children.find(item => checkedSet.has(item));
+                        const uncheck = children.find(item => !checkedSet.has(item));
+                        if (check && !uncheck) { //全选
+                            addClass(elms[idx], 'is-checked');
+                            removeClass(elms[idx], 'is-indeterminate');
+                        } else if (check && uncheck) { //半选
+                            addClass(elms[idx], 'is-indeterminate');
+                            removeClass(elms[idx], 'is-checked');
+                        } else {
+                            removeClass(elms[idx], 'is-checked');
+                            removeClass(elms[idx], 'is-indeterminate');
+                        }
+                        return;
+                    }
+                    checkedSet.has(row)
+                        ? addClass(elms[idx], 'is-checked')
+                        : removeClass(elms[idx], 'is-checked')
+                });
+            })
+        },
+    },
+
+    watch: {
+        // renderList更新后 即使state未变，但行索引可能变化
+        'store.renderListTrigger':{
+            handler:function(){
+                this.updateTreeExpandClass();
+                this.updateCheckClass();
+                this.updateExpandClass();
             }
         },
         'store.checkTrigger': {
             handler: function () {
-                this.$nextTick(() => {
-                    const elms = this.$el.querySelectorAll('tr.row');
-                    const {checkedSet,treeData} = this.store;
-                    this.renderList.forEach((row, idx) => {
-                        let i = treeData.get(row);
-                        if(i && !i.isLeaf){ //非叶子树节点
-                            const children = i.children;
-                            const check = children.find(item => checkedSet.has(item));
-                            const uncheck = children.find(item => !checkedSet.has(item));
-                            if(check && !uncheck){ //全选
-                                addClass(elms[idx],'is-checked');
-                                removeClass(elms[idx],'is-indeterminate');
-                            }else if(check && uncheck){ //半选
-                                addClass(elms[idx],'is-indeterminate');
-                                removeClass(elms[idx],'is-checked');
-                            }else{
-                                removeClass(elms[idx],'is-checked');
-                                removeClass(elms[idx],'is-indeterminate');
-                            }
-                            return;
-                        }
-                        checkedSet.has(row)
-                            ? addClass(elms[idx], 'is-checked')
-                            : removeClass(elms[idx], 'is-checked')
-                    });
-                })
+                this.updateCheckClass();
             }
         },
-        'store.selectIdx': {
+        'store.select$Idx': {
             handler: function (newRowIdx, oldRowIdx) {
-                const rows = this.$el.querySelectorAll('tr.row');
-                const oldRowDom = rows[oldRowIdx];
-                const newRowDom = rows[newRowIdx];
-                oldRowDom && removeClass(oldRowDom, 'current-row');
-                newRowDom && addClass(newRowDom, 'current-row');
+                this.$nextTick(() => {
+                    const rows = this.$el.querySelectorAll('tr.row');
+                    const oldRowDom = rows[oldRowIdx];
+                    const newRowDom = rows[newRowIdx];
+                    oldRowDom && removeClass(oldRowDom, 'current-row');
+                    newRowDom && addClass(newRowDom, 'current-row');
+                });
             },
         },
-        'store.hoverIdx': {
+        'store.hover$Idx': {
             handler: function (newRowIdx, oldRowIdx) {
-                const rows = this.$el.querySelectorAll('tr.row');
-                const oldRowDom = rows[oldRowIdx];
-                const newRowDom = rows[newRowIdx];
-                oldRowDom && removeClass(oldRowDom, 'is-hover');
-                newRowDom && addClass(newRowDom, 'is-hover');
+                this.$nextTick(() => {
+                    const rows = this.$el.querySelectorAll('tr.row');
+                    const oldRowDom = rows[oldRowIdx];
+                    const newRowDom = rows[newRowIdx];
+                    oldRowDom && removeClass(oldRowDom, 'is-hover');
+                    newRowDom && addClass(newRowDom, 'is-hover');
+                })
             }
         },
     }

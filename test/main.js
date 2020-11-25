@@ -3,23 +3,46 @@ import CustomTable from '../packages/table/index';
 
 Vue.config.performance = true;
 
-window.__vm = new Vue({
+new Vue({
     data() {
         return {
             cols: [
                 {key: '_expand', type: 'expand'},
                 {key: '_check', type: 'check'},
                 {
-                    key: 'a', label: 'a', headerAlign: 'center'
+                    key: 'a', label: 'a', headerAlign: 'center', align: 'center',
                     /*render: (h, {row, rowIndex, col, colIndex}) => {
                         return row.a
                     },*/
                 },
                 {key: 'b', label: 'b'}
             ],
-            tableData: new Array(200).fill(0).map((i, idx) => {
-                return {a: idx}
-            })
+            tableData: [
+                {
+                    a: 1, children: [
+                        {
+                            a: '1-1', children: [
+                                {a: '1-1-1'},
+                                {a: '1-1-2'}
+                            ]
+                        },
+                        {a: '1-2', children: []},
+                        {
+                            a: '1-3', children: [
+                                {a: '1-3-1'}
+                            ]
+                        },
+                    ]
+                },
+                {
+                    a: 2, children: [
+                        {a: '2-1'},
+                        {a: '2-2', children: [{a:'2-2-1'}]},
+                        {a: '2-3'}
+                    ]
+                },
+                {a: 3},
+            ]
         }
     },
     render(h) {
@@ -31,9 +54,6 @@ window.__vm = new Vue({
                 height: '100%',
                 rowKey: 'a',
                 treeNodeKey: '_check',
-                enableHighlightCol: true,
-                highlightColHeaderCellStyle: {backgroundColor: 'red'},
-                highlightColRowCellStyle: {fontSize: '16px', backgroundColor: 'red'},
             },
             scopedSlots: {
                 expand: ({row, idx}) => {
@@ -45,3 +65,5 @@ window.__vm = new Vue({
         })
     }
 }).$mount('#app')
+
+

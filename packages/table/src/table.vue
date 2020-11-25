@@ -237,6 +237,7 @@ export default {
         }
     },
     mounted() {
+        window.__vm = this;
         this.initEvent();
         setTimeout(() => {
             this.updateScrollBar();
@@ -422,7 +423,7 @@ export default {
         },
         /*鼠标离开组件时*/
         mouseLeaveTable() {
-            this.store.hoverIdx = this.store.hoverRow = null;
+            this.store.hover$Idx = this.store.hoverRow = null;
         },
 
         /*代理子组件事件*/
@@ -458,19 +459,19 @@ export default {
             const store = this.store;
             row = this.getRow(row);
             if (!row) {
-                store.selectRow = store.selectIdx = null;
+                store.selectRow = store.select$Idx = null;
             } else {
                 if (row !== store.selectRow) {
                     store.selectRow = row;
-                    store.selectIdx = store.renderList.findIndex(i => i === row);
+                    store.select$Idx = store.renderList.findIndex(i => i === row);
                 } else {
-                    store.selectRow = store.selectIdx = null;
+                    store.selectRow = store.select$Idx = null;
                 }
             }
         },
 
-        //勾选节点
-        toggleRowChecked(row, checked) {
+        //勾选节点，不改变渲染列表，只改变class
+        toggleRowChecked(row, checked, emit=true) {
             const store = this.store, checkedSet = store.checkedSet, self = this;
             row = this.getRow(row);
             if (!row) return;
@@ -514,8 +515,8 @@ export default {
                     }
                 }
                 store.checkNums = checkedSet.size;
-                this.store.checkTrigger++;
-                this.dispatchEvent(TableEvent.CheckRow, row, checked, checkedSet /*readOnly*/);
+                store.checkTrigger++;
+                emit && this.dispatchEvent(TableEvent.CheckRow, row, checked, checkedSet /*readOnly*/);
             }
 
             function checkParent(parent) {
@@ -535,41 +536,44 @@ export default {
             store.checkTrigger++;
         },
 
-        //展开节点, 不渲染也能展开(树的子节点展开,树未展开)
-        toggleRowExpanded(row, expanded) {
-            const store = this.store, expandedRows = store.expandedRows;
+        //展开节点, 影响渲染列表
+        toggleRowExpanded(row, expanded,emit=true) {
+            const store = this.store, expandedSet = store.expandedSet;
             row = this.getRow(row);
             if (!row) return;
-            let change = false, i = expandedRows.indexOf(row);
+            let change = false, has = expandedSet.has(row);
             if (isDefined(expanded)) { //指定了状态
                 expanded = Boolean(expanded)
             } else { //未指定，toggle
-                expanded = i === -1
+                expanded = !has
             }
-            if (expanded && i === -1) {
-                expandedRows.push(row);
+            if (expanded && !has) {
+                expandedSet.add(row);
                 change = true;
-            } else if (!expanded && i !== -1) {
-                expandedRows.splice(i, 1);
+            } else if (!expanded && has) {
+                expandedSet.delete(row);
                 change = true;
             }
             if (change) {
-                //展开节点不改变渲染列表,
-                this.store.expandTrigger++;
-                this.dispatchEvent(TableEvent.ExpandRow, row, expanded, expandedRows/*readOnly*/);
+                store.expandTrigger++;
+                store.updateRenderList();
+                store.updateSelect();
+                emit && this.dispatchEvent(TableEvent.ExpandRow, row, expanded, expandedSet/*readOnly*/);
             }
         },
         setAllExpanded(expanded) {
             expanded = Boolean(expanded);
             const store = this.store;
-            let oldAllExpanded = store.expandedRows.length === store.flatDfsData.length;
-            if((oldAllExpanded && expanded) || (!store.expandedRows.length && !expanded)) return;
-            this.store.expandedRows = expanded ? [...this.store.flatDfsData] : [];
+            let oldAllExpanded = store.expandedSet.size === store.flatDfsData.length;
+            if((oldAllExpanded && expanded) || (!store.expandedSet.size && !expanded)) return;
+            this.store.expandedSet = expanded ? new Set(...this.store.flatDfsData) : new Set();
             this.store.expandTrigger++;
+            this.store.updateRenderList();
+            this.store.updateSelect();
         },
 
         //展开树节点
-        toggleTreeExpanded(row, expanded) {
+        toggleTreeExpanded(row, expanded,emit=true) {
             const store = this.store, treeMap = store.treeData;
             row = this.getRow(row);
             if (!row) return;
@@ -582,7 +586,7 @@ export default {
             }
             let change = false;
             if (expanded && !treeNode.treeExpand) { //展开,顺着父节点一直展开到root
-                if (!treeNode.isLeaf) {
+                if (!treeNode.isLeaf) { //叶子节点不可展开
                     treeNode.treeExpand = true;
                     store.treeExpandedSet.add(row);
                 }
@@ -600,9 +604,46 @@ export default {
                 change = true;
             }
             if (change) {
-                //会导致渲染列表变化,重新渲染
-                store.renderListTrigger++;
-                this.dispatchEvent(TableEvent.ExpandTreeRow, row, expanded, store.treeExpandedSet/*readOnly*/);
+                store.treeExpandTrigger++;
+                store.updateRenderList();
+                store.updateSelect();
+                emit && this.dispatchEvent(TableEvent.ExpandTreeRow, row, expanded, store.treeExpandedSet/*readOnly*/);
+            }
+        },
+        setAllTreeExpanded(expanded){
+            expanded = Boolean(expanded);
+            const store = this.store, {treeData,treeExpandedSet} = store;
+            let change = false;
+            if(expanded){ //全部展开
+                //找到一个非叶子的未展开节点
+                const unExpandOne = Array.from(treeData).find(item=>{
+                    const [row,treeNode] = item;
+                    return !treeNode.isLeaf && !treeNode.treeExpand;
+                });
+                if(unExpandOne) change = true;
+                //do update
+                const _set = store.treeExpandedSet = new Set();
+                treeData.forEach((treeNode,row)=>{
+                    if(!treeNode.isLeaf){
+                        _set.add(row);
+                        treeNode.treeExpand = true
+                    }
+                });
+            }else{ //全部不展开
+                const expandOne = Array.from(treeData).find(item=>{
+                    const [row,treeNode] = item;
+                    return !treeNode.isLeaf && treeNode.treeExpand;
+                });
+                if(expandOne) change = true;
+                store.treeExpandedSet.clear();
+                treeData.forEach(treeNode=>{
+                    treeNode.treeExpand = false;
+                });
+            }
+            if(change){
+                store.treeExpandTrigger++;
+                store.updateRenderList();
+                store.updateSelect();
             }
         },
 
@@ -611,33 +652,13 @@ export default {
             return this.store.sortColumns;
         },
 
-        _handleTableDataChange(newly, older) {
-            //重新赋值,滚动到左上角
-            newly !== older && this.$nextTick(() => {
-                const {scrollView, leftScrollWrap, rightScrollWrap} = this.$refs;
-                [scrollView, leftScrollWrap, rightScrollWrap].forEach(wrap => {
-                    if (wrap) {
-                        wrap.scrollTop = wrap.scrollLeft = 0;
-                    }
-                })
-            });
-            const store = this.store;
-            store.hoverIdx = store.hoverRow = null;
-            //更新树节点map,要开启树结构必须指定childrenKey
-            this.childrenKey && store.updateTreeDataMap();
-            //更新树结构的深度遍历list
-            store.flatDfsData = treeToArray(newly, this.childrenKey, true); //flat arr
-            //更新待渲染列表
-            //更新渲染列表
-            store.renderListTrigger++;
-        },
     },
     watch: {
         'store.checkTrigger': function () {
             this.dispatchEvent(TableEvent.CheckChange, this.store.checkedSet /*readOnly*/);
         },
         'store.expandTrigger': function () {
-            this.dispatchEvent(TableEvent.ExpandChange, this.store.expandedRows /*readOnly*/);
+            this.dispatchEvent(TableEvent.ExpandChange, this.store.expandedSet /*readOnly*/);
         },
         'store.treeExpandTrigger':function(){
             this.dispatchEvent(TableEvent.TreeExpandChange, this.store.treeExpandedSet /*readOnly*/);
@@ -653,7 +674,16 @@ export default {
         },
         tableData: {
             handler: function (newly, older) {
-                this._handleTableDataChange(newly, older);
+                //重新赋值,滚动到左上角
+                newly !== older && this.$nextTick(() => {
+                    const {scrollView, leftScrollWrap, rightScrollWrap} = this.$refs;
+                    [scrollView, leftScrollWrap, rightScrollWrap].forEach(wrap => {
+                        if (wrap) {
+                            wrap.scrollTop = wrap.scrollLeft = 0;
+                        }
+                    })
+                });
+                this.store.handleTableDataChange();
             },
             immediate: true
         }

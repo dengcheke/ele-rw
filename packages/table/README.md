@@ -1,34 +1,34 @@
 ### table attr
-| 参数名                 | 说明                                                                      | 类型                                                                                 | 默认值      | 可选值                         |
-|---------------------|-------------------------------------------------------------------------|------------------------------------------------------------------------------------|----------|-----------------------------|
-| row\-key            | 行数据的key,用于指定key查找一行数据等                                                  | String / Function\(row\)                                                           |          |                             |
-| children\-key       | 表示树形结构的子节点字段,设为null表示不开启树形                                              | String                                                                             | children |                             |
-| tree\-node\-key     | 显示树形展开按钮的字段名                                                            | String                                                                             |          |                             |
-| table\-data         | 表格数据                                                                    | Array<Object>                                                                      | \[\]     |                             |
-| table\-cols         | 表格列配置,column参数见后面                                                       | Array<columnObject>                                                                | \[\]     |                             |
-| height              | 表格高度, 为'auto'时表示自动高度，无限增长，受minHeight,maxHeight限制，其它非'auto'字符串和数字表示高度受控， | String / Number                                                                    | 'auto'   |                             |
-| min\-height         | 表格最小高度,                                                                 | Number                                                                             |          |                             |
-| max\-height         | 表格最大高度                                                                  | Number                                                                             |          |                             |
-| align               | 表格所有cell\(包括header\)的对齐方式，同css align\-items属性                           | String                                                                             | 'left'   | 'left' / 'right' / 'center' |
-| indent              | 树形结构的缩进                                                                 | Number                                                                             | 16       |                             |
-| expand\-render      | 展开行的渲染函数, 或者使用slot 如<template \#expand=\{row\}>                         | Function\( h, \{ row \} \)                                                         |          |                             |
-| span\-method        | 合并td方法 返回\[rowspan,colspan\],仅在常规col生效,内置的check和expand列不生效              | Function\( \{ row, rowIndex, col, colIndex \} \)                                   |          |                             |
+| 参数名 | 说明 | 类型 | 默认值 | 可选值 |
+|---------------------|---------------------------------------------------------------------------------|------------------------------------------------------------------------------------|----------|-----------------------------|
+| row\-key            | 行数据的key,用于指定key查找一行数据等 | String / Function\(row\) | | |
+| children\-key       | 表示树形结构的子节点字段,设为null表示不开启树形 | String | children | |
+| tree\-node\-key     | 显示树形展开按钮的字段名 | String | | |
+| table\-data         | 表格数据 | Array\<row\> | \[\] | |
+| table\-cols         | 表格列配置,column参数见后面 | Array\<columnObject\> | \[\] | |
+| height              | 表格高度,为'auto'时表示自动高度,受minHeight,maxHeight限制,其它非'auto'字符串和数字表示高度受控 | String / Number | 'auto' | |
+| min\-height         | 表格最小高度, | Number  | | |
+| max\-height         | 表格最大高度 | Number | | |
+| align               | 表格所有cell\(包括header\)的对齐方式，同css align\-items属性 | String | 'left' | 'left' / 'right' / 'center' |
+| indent              | 树形结构的缩进 | Number | 16 | |
+| expand\-render      | 展开行的渲染函数, 或者使用slot 如<template \#expand=\{row\}> | Function\( h, \{ row \} \) | | |
+| span\-method        | 合并td方法 返回\[rowspan,colspan\],仅在常规col生效,内置的check和expand列不生效 | Function\( \{ row, rowIndex, col, colIndex \} \) | |  |
 | enableCurrentRow    | 是否开启高亮当前行 | Boolean |True |
-| row\-style          | 内容区域行样式                                                                 | Object / Function\( \{ row, rowIndex \) \}                                         |          |                             |
-| row\-class          | 内容区域的行class                                                             | Object / String / Array<String> / Function\( \{ row, rowIndex \} \)                |          |                             |
-| cell\-style         | 内容区cell单元格样式                                                            | Object / Function\( \{ row, rowIndex, col, colIndex \} \)                          |          |                             |
-| cell\-class         | 内容区cell单元格class                                                         | Object / String / Array<String> / Function\( \{ row, rowIndex, col, colIndex \} \) |          |                             |
-| header\-row\-style  | 表头行样式                                                                   | Object / Function\( \{ row<columnObject>, rowIndex \} \)                           |          |                             |
-| header\-row\-class  | 表头行class                                                                | Object / String / Array<String> / Function\( \{ row<columnObject>, rowIndex \} \)  |          |                             |
-| header\-cell\-style | 表头cell单元格样式                                                             | Object / Function\( \{ row<columnObject>, rowIndex , col, colIndex \} \)           |          |                             |
-| header\-cell\-style | 表头cell单元格class                                                          | Object / Function\( \{ row<columnObject>, rowIndex, col, colIndex \} \)            |          |                             |
+| row\-style          | 内容区域行样式 | Object / Function\( \{ row, rowIndex \) \} | | |
+| row\-class          | 内容区域的行class | Object / String / Array\<String\> / Function\( \{ row, rowIndex \} \) | | |
+| cell\-style         | 内容区cell单元格样式 | Object / Function\( \{ row, rowIndex, col, colIndex \} \) | |  |
+| cell\-class         | 内容区cell单元格class | Object / String / Array\<String\> / Function\( \{ row, rowIndex, col, colIndex \} \) | | |
+| header\-row\-style  | 表头行样式 | Object / Function\( \{ row<columnObject>, rowIndex \} \) | | |
+| header\-row\-class  | 表头行class | Object / String / Array\<String\> / Function\( \{ row\<columnObject\>, rowIndex \} \) | | |
+| header\-cell\-style | 表头cell单元格样式 | Object / Function\( \{ row\<columnObject\>, rowIndex , col, colIndex \} \) | | |
+| header\-cell\-style | 表头cell单元格class | Object / Function\( \{ row\<columnObject\>, rowIndex, col, colIndex \} \) | | |
 ### table event
 | 事件名                  | 说明                                                                                                        | 参数                                         |
 |----------------------|-----------------------------------------------------------------------------------------------------------|--------------------------------------------|
 | check\-row        | 勾选row时，row当前行数据，checked 当前行的勾选状态， checkedSet 所有勾选row的集合 | function \( row, checked，checkedSet\)|
 | check\-change | 勾选发生变化 ,checkedSet 所有勾选row的集合 | function \( checkedSet \) |
-| expand\-row       | 展开row时，row当前行数据，expanded 当前行的展开状态， expandedList 所有展开row的列表 | function \( row, expanded, expandedList\)  |
-| expand\-change | 展开变化时, expandedList 所有展开row的列表 | function \( expandedList \) |
+| expand\-row       | 展开row时，row当前行数据，expanded 当前行的展开状态， expandedSet 所有展开row的集合 | function \( row, expanded, expandedSet\)  |
+| expand\-change | 展开变化时, expandedList 所有展开row的列表 | function \( expandedSet \) |
 | expand\-tree\-row | 展开树形节点时, row 当前行数据， expanded 当前行的展开状态, treeExpandSet 所有展开树节点的结合| function \( row, expanded, treeExpandedSet\) |
 | tree\-expand\-change | 展开树形节点时,  treeExpandedSet 所有展开树节点的集合 | function\( treeExpandedSet \) |
 | click\-row           | 点击一行时,  row 当前行数据， col 点击cell位置对应的列， index 行索引（不包括tr\.expand\-row）| function \( \{ row, col, index, event \}\) |

@@ -1,5 +1,5 @@
 import Vue from 'vue';
-import {isDefined} from "@src/utils/index";
+import {isDefined, treeToArray} from "@src/utils/index";
 import {
     getColId,
     isNotEmptyArray,
@@ -7,6 +7,7 @@ import {
     parseWidth,
     walkTreeNode
 } from "ele-rw-ui/packages/table/src/utils";
+import {TableEvent} from "ele-rw-ui/packages/table/src/event-name";
 
 export const LEFT = "left", Middle = "middle", RIGHT = "right";
 export const ASC = "asc", DESC = 'desc';
@@ -43,13 +44,24 @@ export function ColumnNode(col) {
 const TableStore = Vue.extend({
     data() {
         this.table = null;
+        ///don't use follow attr in computed or it can not update !!!!
         this.checkedSet = new Set();//所有勾选节点,checkrow 不影响渲染,只是添加标记class,非响应式
-        this.treeExpandedSet = new Set();//
+        this.treeExpandedSet = new Set();//所有的树形展开节点
+        this.expandedSet = new Set(); //所有的展开行
+        /*
+            树形row的map集合,
+            有子节点或者是非根叶子节点才会出现在里面
+            row:{
+                parent:,
+                children:[],
+                level:,
+                show:,
+                treeExpand:
+            }*/
+        this.treeData =  new Map();
         return {
             containerWidth: 0,//容器宽度,列宽%以此为基准
-
             tableBodyWidth: 0,//内容宽度
-
             defaultColWidth: 80,//col默认宽度
 
             //col info
@@ -64,34 +76,19 @@ const TableStore = Vue.extend({
             fixedRightWidth: 0,//右边固定总列宽
 
             flatDfsData: [],//tableData深度遍历的展开数据(包括动态添加的),
-            renderList: [],//当前渲染列表,tableData 展开数据一部分,包含treeExpand
-            renderListTrigger: 1,//更新renderlist trigger
+            renderList: [],//当前渲染列表,tableData 展开数据一部分,包含treeExpand, expand
+            renderListTrigger:1,//渲染列表变化
 
             selectRow: null,
-            selectIdx: null,
+            select$Idx: null, //dom index
 
             hoverRow: null,
-            hoverIdx: null,
+            hover$Idx: null, //dom index
 
             checkNums: 0,
-            checkTrigger: 1, //勾选变化
-
-            expandedRows: [], //所有的展开行，不是treeNode展开, use in tbody render
-            expandTrigger: 1, //展开行变化
-
-
-            /*
-            树形row的map集合,
-            有子节点或者是非根叶子节点才会出现在里面
-            row:{
-                parent:,
-                children:[],
-                level:,
-                show:,
-                treeExpand:
-            }*/
-            treeData: new Map(),
-            treeExpandTrigger: 1
+            checkTrigger: 1, //勾选项变化,不影响renderList, table: emit event | tobody: update class
+            expandTrigger: 1, //展开行变化,影响renderList,  table: emit event,
+            treeExpandTrigger: 1//树形展开变化,影响renderList, table: emit event
         }
     },
     methods: {
@@ -266,7 +263,24 @@ const TableStore = Vue.extend({
             this.fixedRightWidth = fixedRight;
         },
 
-        //when tableData change
+
+        handleTableDataChange(){
+            this.hover$Idx = this.hoverRow = null;
+            const {childrenKey} = this.table;
+            //更新树节点map,要开启树结构必须指定childrenKey
+            childrenKey && this.updateTreeDataMap();
+            //更新树结构的深度遍历list, flat data ,拉平成一维数组
+            this.flatDfsData = treeToArray(this.table.tableData, childrenKey, true);
+            //更新check,expand,treeExpand 状态,
+            this.updateTreeExpand();
+            this.updateCheck();
+            this.updateExpand();
+            //更新渲染列表
+            this.updateRenderList();
+            //更新select，select只存在于渲染出的，在renderList之后更新
+            this.updateSelect();
+        },
+        //更新树形map数据
         updateTreeDataMap() {
             const {tableData, childrenKey} = this.table;
             const oldMap = this.treeData;
@@ -277,25 +291,41 @@ const TableStore = Vue.extend({
                         parent: parent,
                         children: children,
                         level: level,
-                        isLeaf: !!parent && !isDefined(children),
-                        show: null, //树节点是否可见
-                        treeExpand: null, //树节点是否展开(不可见也是可以展开的,保存展开状态)
+                        isLeaf: !!parent && (!children || children.length === 0),
+                        treeExpand: null,
                     }
                     const old = oldMap.get(row);
-                    if (old) {
-                        treeNodeData.show = old.show;
-                        treeNodeData.treeExpand = old.treeExpand;
-                    } else {
-                        treeNodeData.show = !treeNodeData.isLeaf;//根节点必定可见
-                        treeNodeData.treeExpand = false;
-                    }
+                    treeNodeData.treeExpand = old ? old.treeExpand : false;
                     map.set(row, treeNodeData);
                 }
             }, childrenKey);
         },
+        //update state
+        updateTreeExpand(){
+            const oldTreeExpands = this.treeExpandedSet;
+            const newTreeExpands = this.treeExpandedSet = new Set();
+            moveItemNewHasInOld(this.flatDfsData,oldTreeExpands,newTreeExpands);
+            //don't use trigger, tbody has watch renderTrigger to update row class,
+            //avoid trigger update twice
+            oldTreeExpands.size && this.table.dispatchEvent(TableEvent.TreeExpandChange,newTreeExpands);
+        },
+        updateCheck(){
+            const oldChecks = this.checkedSet;
+            let newChecks = this.checkedSet = new Set();
+            moveItemNewHasInOld(this.flatDfsData,oldChecks,newChecks);
+            this.checkNums = newChecks.size;
+            oldChecks.size && this.table.dispatchEvent(TableEvent.CheckChange,newChecks);
+        },
+        updateExpand(){
+            const oldExpandRows = this.expandedSet;
+            let newExpandRows = this.expandedSet = new Set();
+            moveItemNewHasInOld(this.flatDfsData,oldExpandRows,newExpandRows);
+            oldExpandRows.size && this.table.dispatchEvent(TableEvent.ExpandChange,newExpandRows);
+        },
+        //update renderList
         updateRenderList() {
             const treeMap = this.treeData, notExpandSet = new Set();
-            this.renderList = this.flatDfsData.map(row => {
+            const list = this.flatDfsData.map(row => {
                 if (!treeMap.has(row)) { //非树形节点,一定会渲染
                     return row;
                 } else { //树形节点
@@ -316,47 +346,30 @@ const TableStore = Vue.extend({
                     }
                 }
             }).filter(Boolean);
+            //插入expandrow
+            for(let i = 0; i < list.length; i++){
+                const row = list[i];
+                if(this.expandedSet.has(row)){
+                    list.splice(i+1,0,['expand',row]);
+                    i = i + 1;
+                }
+            }
+            this.renderList = list;
+            this.renderListTrigger++;
         },
-        //after treeMap and renderList update
         updateSelect(){
             const idx = this.renderList.indexOf(this.selectRow);
             if (idx !== -1) {
-                this.selectIdx = idx;
+                this.select$Idx = idx;
             } else {
-                this.selectRow = this.selectIdx = null;
+                this.selectRow = this.select$Idx = null;
             }
         },
-        updateTreeExpand(){
-            const oldTreeExpands = this.treeExpandedSet;
-            const newTreeExpands = this.treeExpandedSet = new Set();
-            moveItemNewHasInOld(this.flatDfsData,oldTreeExpands,newTreeExpands);
-            this.treeExpandTrigger++;
-        },
-        updateCheck(){
-            const oldChecks = this.checkedSet;
-            let newChecks = this.checkedSet = new Set();
-            moveItemNewHasInOld(this.flatDfsData,oldChecks,newChecks);
-            this.checkNums = newChecks.size;
-            this.checkTrigger++;
-        },
-        updateExpand(){
-            const oldExpandRows = this.expandedRows;
-            let newExpandRows = this.expandedRows = [];
-            moveItemNewHasInOld(this.flatDfsData,oldExpandRows,newExpandRows);
-            this.expandTrigger++;
-        }
     },
     watch: {
         containerWidth: function (v) {
             this.computedColWidth();//重新计算每列布局
         },
-        renderListTrigger: function () {
-            this.updateRenderList();
-            this.updateSelect();
-            this.updateTreeExpand();
-            this.updateCheck();
-            this.updateExpand();
-        }
     }
 });
 

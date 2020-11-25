@@ -6,7 +6,7 @@ import {TableEvent} from "./event-name";
 export default {
     name: "tbody-tr-render",
     inject: ['table', 'store'],
-    props: ['row', 'idx', 'fixed', 'treeNodeData'],
+    props: ['row', 'domIndex', 'index', 'fixed', 'treeNodeData'],
     computed: {
         ...mapping('store', {
             leafColumns: store => store.leafColumns || [],
@@ -17,10 +17,10 @@ export default {
             const row = this.row, store = this.store;
             if (this.table.enableCurrentRow) {
                 if (row === store.selectRow) {
-                    store.selectRow = store.selectIdx = null;
+                    store.selectRow = store.select$Idx = null;
                 } else {
                     store.selectRow = row;
-                    store.selectIdx = this.idx;
+                    store.select$Idx = this.domIndex;
                 }
             }
             let target = e.target, col;
@@ -35,11 +35,17 @@ export default {
                 let id = target.dataset.colUid;
                 id && (col = this.store.leafColumns.find(i => i._uid == id))
             }
-            this.table.dispatchEvent(TableEvent.ClickRow, {row: row, index: this.idx, col: col, event: e});
+            this.table.dispatchEvent(TableEvent.ClickRow, {
+                row: row,
+                rowIndex: this.index,
+                $rowIndex:this.domIndex,
+                col: col,
+                event: e
+            });
         },
         handleEnterRow: throttle(function (e) {
             this.store.hoverRow = this.row;
-            this.store.hoverIdx = this.idx;
+            this.store.hover$Idx = this.domIndex;
         }, 30, {leading: true, trailing: false}),
         handleCheck(e) {
             e.stopPropagation();
@@ -54,7 +60,8 @@ export default {
             this.table.toggleTreeExpanded(this.row)
         },
         getTrStyle() {
-            const {rowStyle} = this.table, args = {row: this.row, rowIndex: this.idx};
+            const {rowStyle} = this.table,
+                args = {row: this.row, rowIndex: this.index, $rowIndex:this.domIndex};
             let trStyle = {};
             if (rowStyle) {
                 trStyle = resolveStyle(rowStyle, args);
@@ -62,7 +69,8 @@ export default {
             return trStyle;
         },
         getTrClass() {
-            const {rowClass} = this.table, args = {row: this.row, rowIndex: this.idx};
+            const {rowClass} = this.table,
+                args = {row: this.row, rowIndex: this.index, $rowIndex: this.domIndex};
             let trClass = {row: true};
             if (rowClass) {
                 trClass = {
@@ -156,14 +164,12 @@ export default {
     render: function (h) {
         const columns = this.leafColumns,
             fixed = this.fixed,
-            idx = this.idx,
+            index = this.index,
+            domIndex = this.domIndex,
             row = this.row;
         const trAttr = {
             class: this.getTrClass(),
             style: this.getTrStyle(),
-            attrs: {
-                'data-row-index': idx
-            },
             on: {
                 mouseenter: this.handleEnterRow,
                 click: this.handleClickRow
@@ -172,7 +178,7 @@ export default {
         return <tr {...trAttr}>
             {columns.map((colNode, colIndex) => {
                 let tdAttr = {
-                    'class': {
+                    class: {
                         'is-hidden': colNode.fixed !== fixed,
                     },
                     attrs: {
@@ -181,7 +187,7 @@ export default {
                     key: colNode.key
                 };
                 const col = colNode.col;
-                const args = {row: row, rowIndex: idx, col: col, colIndex: colIndex};
+                const args = {row: row, rowIndex: index, $rowIndex:domIndex, col: col, $colIndex: colIndex};
                 //span method
                 if (this.table.spanMethod && colNode.type === 'text') {
                     const res = this.table.spanMethod.call(null, args)
