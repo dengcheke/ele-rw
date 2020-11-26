@@ -1,7 +1,7 @@
 <template>
     <div class="ele-rw-table outer-wrapper" :uid="'table_uid_'+_globalTableId" :style="calcElStyle()">
         <div class="inner-wrapper" :style="calcInnerStyle()">
-            <div class="table-middle">
+            <div class="table-main">
                 <div class="table__header-wrapper" ref="headerWrap">
                     <table-header/>
                 </div>
@@ -22,7 +22,7 @@
                 </div>
                 <empty-slot v-show="empty" style="color:white;flex:1 0 0"/>
             </div>
-            <div class="table__fixed-left" v-if="fixedLeftCount"
+            <div class="table__fixed--left" v-if="fixedLeftCount"
                  :class="{'fixed-shadow':showLeftShadow}"
                  :style="{width:fixedLeftWidth+'px'}">
                 <div class="table__header-wrapper fixed-left">
@@ -34,7 +34,7 @@
                     <table-body fixed="left"/>
                 </div>
             </div>
-            <div class="table__fixed-right" v-if="fixedRightCount"
+            <div class="table__fixed--right" v-if="fixedRightCount"
                  :class="{'fixed-shadow':showRightShadow}"
                  :style="{ width:fixedRightWidth+'px'}">
                 <div class="table__header-wrapper fixed-right"
@@ -62,10 +62,7 @@ import TableBody from './table-body';
 import ResizeObserver from 'resize-observer-polyfill';
 import Bar from '../../bar';
 import {barWidthOb, getTableId} from "ele-rw-ui/packages/table/src/utils";
-/* $emit
-*      click-row:  {row: 当前点击row, idx: row索引(第几行), event: 点击事件},
-*      sort-change:  column:当前排序变化的列node, sortColumns:所有排序的列的node
-*/
+
 export default {
     name: "EleRwTable",
     directives: {
