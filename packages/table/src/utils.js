@@ -182,3 +182,86 @@ export const walkTreeNode = function (root, cb, childrenKey = 'children', dfs = 
 Object.defineProperty(walkTreeNode, 'STOP', {
     value: Symbol()
 })
+
+
+const a = 12.0128358864784, b = 0.542452259603295;
+
+/*
+*  获取滚动scrollValue值需要的时间,最多800ms
+*  y=ax^b,
+*/
+function getScrollTotalTime(scrollValue) {
+    return Math.min(a * Math.pow(scrollValue, b) >> 0, 800);
+}
+
+/**
+ * 滚动动画
+ * @param from, 开始值
+ * @param to, 结束值
+ * @param rafCb, 回调函数,每帧一次
+ */
+export function animationScrollTop(from, to, rafCb, isDone) {
+    //总值
+    const scrollValue = to - from;
+    //总时间
+    const totalTime = getScrollTotalTime(Math.abs(scrollValue));
+    let timer;
+    const res = {
+        from: from,
+        to: to,
+        totalTime: totalTime,
+        walkTime: 0,//已经走过时间
+        value: from,//当前值,
+        isDone: false, //是否已完成
+        cancel: () => {
+            timer && cancelAnimationFrame(timer);
+        }
+    }
+    let now = performance.now(); //当前时间
+    timer = requestAnimationFrame(function step() {
+        let _now = performance.now(), cancel = false;
+        const walkTime = (_now - now) >> 0;
+        res.walkTime += walkTime;
+        if (res.walkTime > res.totalTime) {
+            res.walkTime = res.totalTime;
+            cancel = true;
+        }
+        const percent = res.walkTime / res.totalTime;
+        const [x, y] = threeBezier(percent, [0, 0], [1, 1], [0.5, 1], [0.5, 0]);
+        res.value = (scrollValue * y >> 0) + from; //新值
+        if (cancel) {
+            res.cancel();
+            res.isDone = true;
+            isDone();
+        } else {
+            timer = requestAnimationFrame(step);
+        }
+        rafCb(res);
+    })
+}
+
+/**
+ * @desc 三阶贝塞尔
+ * @param {number} t 当前百分比
+ * @param {Array} p1 起点坐标
+ * @param {Array} p2 终点坐标
+ * @param {Array} cp1 控制点1
+ * @param {Array} cp2 控制点2
+ */
+function threeBezier(t, p1, cp1, cp2, p2) {
+    const [x1, y1] = p1;
+    const [x2, y2] = p2;
+    const [cx1, cy1] = cp1;
+    const [cx2, cy2] = cp2;
+    let x =
+        x1 * (1 - t) * (1 - t) * (1 - t) +
+        3 * cx1 * t * (1 - t) * (1 - t) +
+        3 * cx2 * t * t * (1 - t) +
+        x2 * t * t * t;
+    let y =
+        y1 * (1 - t) * (1 - t) * (1 - t) +
+        3 * cy1 * t * (1 - t) * (1 - t) +
+        3 * cy2 * t * t * (1 - t) +
+        y2 * t * t * t;
+    return [x, y];
+}

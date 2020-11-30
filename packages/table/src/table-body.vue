@@ -70,9 +70,7 @@ export default {
             return vnode;
         });
         const tableAttr = {
-            class: {
-                'table__body': true
-            },
+            class: ['table__body'],
             style: {
                 width: this.tableBodyWidth + 'px',
             },

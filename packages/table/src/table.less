@@ -15,10 +15,9 @@
       }
     }
   }
+
   .scrollbar__bar {
     position: absolute;
-    right: 2px;
-    bottom: 2px;
     z-index: 1;
     border-radius: 4px;
     opacity: 0;
@@ -26,22 +25,22 @@
 
     &.is-vertical {
       width: 6px;
-      top: 2px;
-
-      & > div {
+      right: 2px;
+      .scrollbar__thumb {
         width: 100%;
       }
     }
-
     &.is-horizontal {
       height: 6px;
-      left: 2px;
-
-      & > div {
+      bottom: 2px;
+      left: 0;
+      right: 0;
+      .scrollbar__thumb {
         height: 100%;
       }
     }
   }
+
   .scrollbar__thumb {
     position: relative;
     display: block;
@@ -51,16 +50,17 @@
     border-radius: inherit;
     background-color: #30688b;
     transition: .3s background-color;
-
     &:hover {
       background-color: rgba(144, 147, 153, .5);
     }
   }
 
   /*table*/
+
   table {
     table-layout: fixed;
   }
+
   .table__header {
     color: #69d6f1;
     background-color: rgba(20, 78, 116, 1);
@@ -104,6 +104,7 @@
       }
     }
   }
+
   .table__body {
     color: white;
 
@@ -117,12 +118,20 @@
       }
     }
   }
+
+  .table__footer {
+    background-color: #55a532;
+  }
+
   td {
     padding: 0;
+
     .cell {
       padding: 12px 10px;
+      box-sizing: border-box;
     }
-    &.is-hidden{
+
+    &.is-hidden {
       visibility: hidden;
       pointer-events: none;
     }
@@ -136,14 +145,15 @@
     display: flex;
     flex-direction: column;
 
-    .table__header-wrapper {
+    .table__header-wrapper,
+    .table__footer-wrapper {
       overflow: hidden;
       flex: none;
     }
 
     .table__body-wrapper {
       display: inline-block;
-      vertical-align: top; /*fix父元素scrollHeight 与内容不一致*/
+      vertical-align: top; /*父元素scrollHeight 与内容不一致*/
     }
 
     .scroll-wrapper {
@@ -153,9 +163,11 @@
 
       .scroll-view {
         overflow: scroll;
+        position: relative;
       }
     }
   }
+
   .table__fixed--left {
     position: absolute;
     left: 0;
@@ -163,15 +175,17 @@
     overflow: hidden;
 
     &.fixed-shadow {
-      box-shadow: 5px 0 10px -5px;
+      box-shadow: 5px 0 10px -5px black;
     }
 
     .table__header-wrapper,
     .table__body-wrapper {
+      position: relative;
       width: 100%;
       overflow: hidden;
     }
   }
+
   .table__fixed--right {
     position: absolute;
     overflow: hidden;
@@ -179,7 +193,7 @@
     top: 0;
 
     &.fixed-shadow {
-      box-shadow: -5px 0 10px -5px;
+      box-shadow: -5px 0 10px -5px black;
     }
 
     .table__header-wrapper,
@@ -187,11 +201,13 @@
       width: 100%;
       position: relative;
       overflow: hidden;
+      z-index: 0;
     }
   }
 
 
   /*checkbox*/
+
   tr .cell-checkbox {
     display: inline-block;
     width: 14px;
@@ -201,6 +217,7 @@
     cursor: pointer;
     position: relative;
     background-color: white;
+    z-index: 0; //fixed bug: before 和 after z-index穿透了上层的div并显示
     //use for check
     &:before {
       content: "";
@@ -233,6 +250,7 @@
       transform: translate(-50%, -50%);
     }
   }
+
   tr.is-checked {
     .cell-checkbox {
       background-color: #409eff;
@@ -246,6 +264,7 @@
       display: none;
     }
   }
+
   tr.is-indeterminate {
     .cell-checkbox {
       background-color: #409eff;
@@ -257,14 +276,17 @@
   }
 
   /*普通展开*/
+
   .icon-expand.use-for-expand {
     transition: transform 0.25s;
   }
+
   tr.is-expanded .icon-expand.use-for-expand {
     transform: rotate(90deg);
   }
 
   /*树形展开*/
+
   .icon-expand.use-for-tree {
     transition: transform 0.25s;
     position: absolute;
@@ -274,6 +296,7 @@
     display: block;
     font-size: 18px;
   }
+
   tr.is-tree-expanded .icon-expand.use-for-tree {
     transform: translateY(-50%) rotate(90deg);
   }

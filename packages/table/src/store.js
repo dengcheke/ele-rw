@@ -20,19 +20,23 @@ export function ColumnNode(col) {
         label: col.label,//键名
         render: col.render,//渲染函数 cell
         renderHeader: col.renderHeader,//表头渲染函数
+        renderFooter: col.renderFooter,//表尾渲染函数
         sortable: !!col.sortable,//是否排序
+        align: col.align, //对齐方式
+        headerAlign: col.headerAlign,
+        footerAlign: col.footerAlign,
+        fixed: col.fixed || Middle,//固定位置，默认中间
+        col: col,//原始col对象
+
         sort: null,//当前排序方式 asc / desc
         level: 0,//节点等级,从上往下增加,根为0
         levelIndex: null, //在当前层的col索引位置 从0开始
         isLeaf: false,//是否是叶子节点
         leafNum: 0,//子节点中叶子数目
-        align: col.align, //对齐方式
-        headerAlign: col.headerAlign,
         width: 80,//真实宽度 px值
-        fixed: col.fixed || Middle,//固定位置，默认中间
         parent: null,//父节点
-        children: [],//子节点
-        col: col,//原始col对象
+        children: [],//子节点,columnNode
+
         _noRightBorder: false, //表头td 没有右border
     };
     Object.defineProperty(node, '_uid', {
@@ -61,7 +65,7 @@ const TableStore = Vue.extend({
         this.treeData =  new Map();
         return {
             containerWidth: 0,//容器宽度,列宽%以此为基准
-            tableBodyWidth: 0,//内容宽度
+            tableBodyWidth: 0,//tbody内容宽度
             defaultColWidth: 80,//col默认宽度
 
             //col info
@@ -212,7 +216,8 @@ const TableStore = Vue.extend({
         },
         //计算col宽度布局，决定table整体宽度
         computedColWidth() {
-            let sumW = 0, W = this.containerWidth, flexNum = 0, len = this.leafColumns.length;
+            let sumW = 0, W = this.containerWidth,
+                flexNum = 0, len = this.leafColumns.length;
             if (!W || !len) return;
             for (let i = 0; i < len; i++) {
                 const node = this.leafColumns[i], col = node.col;

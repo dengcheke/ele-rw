@@ -7,49 +7,28 @@ new Vue({
     data() {
         return {
             cols: [
-                {key: '_expand', type: 'expand'},
-                {key: '_check', type: 'check'},
+                {key: '_expand', label:"expand", type: 'expand', width: 100,fixed:'left'},
+                {key: '_check', label:"check", type: 'check', width: 100},
                 {
-                    key: 'a', label: 'a', headerAlign: 'center', align: 'center',
-                    /*render: (h, {row, rowIndex, col, colIndex}) => {
-                        return row.a
-                    },*/
+                    key: 'a', label: 'a', minWidth: 200,
+                    headerAlign: 'center', align: 'center',
                 },
-                {key: 'b', label: 'b'}
+                {key: 'b', label: 'b', fixed:'right',minWidth: 200}
             ],
-            tableData: [
-                {
-                    a: 1, children: [
-                        {
-                            a: '1-1', children: [
-                                {a: '1-1-1'},
-                                {a: '1-1-2'}
-                            ]
-                        },
-                        {a: '1-2', children: []},
-                        {
-                            a: '1-3', children: [
-                                {a: '1-3-1'}
-                            ]
-                        },
-                    ]
-                },
-                {
-                    a: 2, children: [
-                        {a: '2-1'},
-                        {a: '2-2', children: [{a:'2-2-1'}]},
-                        {a: '2-3'}
-                    ]
-                },
-                {a: 3},
+            tableData: new Array(20).fill(0).map((v,idx)=>{return {a:idx,b:'xxxx'}}),
+            footerData: [
+                {a: 'footer-1'},
+                {a: 'footer-2'},
+                {a: 'footer-3'},
             ]
         }
     },
     render(h) {
-        return h(CustomTable, {
+        const vnode =  h(CustomTable, {
             attrs: {
                 tableCols: this.cols,
                 tableData: this.tableData,
+                footerData:this.footerData,
                 align: 'center',
                 height: '100%',
                 rowKey: 'a',
@@ -62,7 +41,8 @@ new Vue({
                     </div>
                 }
             }
-        })
+        });
+        return vnode
     }
 }).$mount('#app')
 

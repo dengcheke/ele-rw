@@ -13,6 +13,72 @@
         padding: 0;
     }
 </style>
-<div id="app"></div>
+<!--<div id="aaa" style="height: 200px;width: 200px;background-color: red;padding: 20px;overflow: auto">
+    <div id="bbb" style="height: 2000px;background-color: #69d6f1"></div>
+</div>
+<div id="toparr" style="overflow: hidden"></div>
+<div id="sumarr" style="overflow: hidden"></div>
+<script>
+    const a = document.body.querySelector('#aaa');
+    const toparrDom = document.body.querySelector('#toparr');
+    const sumarrDom = document.body.querySelector('#sumarr');
+    let topA = a.scrollTop;
+    var toparr = [];
+    var sumarr = [];
+    let t,sumt = 0;
+    let flag = false;
+    a.onscroll = (e) => {
+        if(flag) return;
+        let t1 = performance.now();
+        t  = t || t1;
+        let top1 = a.scrollTop;
+        let deltatop = top1 - topA;
+        //console.log(deltatop);
+        let index = toparr.push(deltatop);
+        let sum = index > 1 ? deltatop + sumarr[index - 2] : deltatop;
+        sumarr.push(sum);
+        topA = top1;
+        toparrDom.innerText = toparr.join(',')
+        sumarrDom.innerText = sumarr.join(',')
+        //console.log(t1 - t);
+        sumt += t1-t;
+        t = t1;
+    }
+    function clear(){toparr = [];
+        flag = true;
+        a.scrollTo({top:0});
+        setTimeout(()=>{
+            topA = a.scrollTop;
+            flag = false;
+            sumarr = [];
+            toparrDom.innerText = ""
+            sumarrDom.innerText = ""
+            t = 0;
+            sumt = 0;
+        },);
+    }
+    window.onkeydown = (e)=>{
+        if(e.shiftKey){
+            clear();
+        }
+    }
+    let test = 1000; tarr=[];
+    var ccc = setInterval(()=>{
+        a.scrollTo({top:test,behavior:'smooth'});
+        test+=20;
+        clearInterval(ccc);
+        /*if(test > 1800){
+            clearInterval(ccc);
+            return;
+        }
+        setTimeout(()=>{
+            tarr.push(sumt);
+            //clear();
+        },1000)*/
+    },1200)
+</script>-->
+<div style="height: 500px;width: 500px">
+    <div id="app"></div>
+</div>
 </body>
 </html>

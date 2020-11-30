@@ -36,8 +36,8 @@ export default {
     name: 'EleRwBar',
     props: {
         vertical: Boolean,
-        size: Number,
-        move: Number,
+        size: Number,//thumb 宽度 百分比
+        move: Number,//移动的百分比
     },
     data() {
         return {
