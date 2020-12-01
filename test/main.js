@@ -15,7 +15,7 @@ new Vue({
                 },
                 {key: 'b', label: 'b', fixed:'right',minWidth: 200}
             ],
-            tableData: new Array(20).fill(0).map((v,idx)=>{return {a:idx,b:'xxxx'}}),
+            tableData: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0].map((v,idx)=>{return {a:idx,b:'xxxx'}}),
             footerData: [
                 {a: 'footer-1'},
                 {a: 'footer-2'},

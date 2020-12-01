@@ -1,19 +1,3 @@
-import Vue from "vue";
-import {getScrollBarWidth, on} from "@src/utils/dom";
-
-//滚动条宽度监听器
-export const barWidthOb = Vue.observable({
-    barWidth: Math.ceil(getScrollBarWidth())
-});
-let _dpr = window.devicePixelRatio;
-on(window, 'resize', () => {
-    const dpr = window.devicePixelRatio;
-    if (dpr !== _dpr) {
-        _dpr = dpr;
-        barWidthOb.barWidth = Math.ceil(getScrollBarWidth());
-    }
-});
-
 //table 全局 id
 let tableGlobalId = 0;
 
@@ -118,15 +102,6 @@ export function mapping(attrName, mapper) {
     return res;
 }
 
-export function appendRow(list, row) {
-    let i = list.indexOf(row);
-    if (i === -1) list.push(row);
-}
-
-export function removeRow(list, row) {
-    let i = list.indexOf(row);
-    if (i !== -1) list.splice(i, 1);
-}
 
 //****
 export function moveItemNewHasInOld(iter, older, newly) {
