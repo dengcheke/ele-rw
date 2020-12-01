@@ -13,19 +13,20 @@
         padding: 0;
     }
 </style>
-<!--<div id="aaa" style="height: 200px;width: 200px;background-color: red;padding: 20px;overflow: auto">
+<div id="aaa" style="height: 200px;width: 200px;background-color: red;padding: 20px;overflow: auto">
     <div id="bbb" style="height: 2000px;background-color: #69d6f1"></div>
 </div>
 <div id="toparr" style="overflow: hidden"></div>
 <div id="sumarr" style="overflow: hidden"></div>
-<script>
+<!--<script>
     const a = document.body.querySelector('#aaa');
     const toparrDom = document.body.querySelector('#toparr');
     const sumarrDom = document.body.querySelector('#sumarr');
     let topA = a.scrollTop;
     var toparr = [];
     var sumarr = [];
-    let t,sumt = 0;
+    var framearr = [];
+    let t,sumt = 0,frame = 0;
     let flag = false;
     a.onscroll = (e) => {
         if(flag) return;
@@ -43,6 +44,7 @@
         //console.log(t1 - t);
         sumt += t1-t;
         t = t1;
+        frame+=1;
     }
     function clear(){toparr = [];
         flag = true;
@@ -55,6 +57,7 @@
             sumarrDom.innerText = ""
             t = 0;
             sumt = 0;
+            frame = 0;
         },);
     }
     window.onkeydown = (e)=>{
@@ -62,19 +65,19 @@
             clear();
         }
     }
-    let test = 1000; tarr=[];
+    let test = 100; tarr=[];
     var ccc = setInterval(()=>{
         a.scrollTo({top:test,behavior:'smooth'});
-        test+=20;
-        clearInterval(ccc);
-        /*if(test > 1800){
+        test+=5;
+        if(test > 300){
             clearInterval(ccc);
             return;
         }
         setTimeout(()=>{
             tarr.push(sumt);
-            //clear();
-        },1000)*/
+            framearr.push(frame)
+            clear();
+        },1000)
     },1200)
 </script>-->
 <div style="height: 500px;width: 500px">

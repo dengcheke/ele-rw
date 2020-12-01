@@ -68,7 +68,7 @@ import TableBody from './table-body';
 import TableFooter from './table-footer';
 import ResizeObserver from 'resize-observer-polyfill';
 import Bar from '../../bar';
-import {barWidthOb, getTableId} from "ele-rw-ui/packages/table/src/utils";
+import {animationScrollValue, barWidthOb, getTableId} from "ele-rw-ui/packages/table/src/utils";
 
 export default {
     name: "EleRwTable",
@@ -226,6 +226,7 @@ export default {
         this.$once('hook:beforeDestroy', () => {
             document.body.removeChild(this.headerStyleElm)
         })
+        this._animScrollTop = this._animScrollLeft = null;
         return {
             headerWrapHeight: 0, //header内容高度
             bodyWrapHeight: 0, //tbody内容高度
@@ -386,12 +387,52 @@ export default {
             const scrollBodyView = this.$refs.scrollBodyView;
             if (!scrollBodyView) return;
             if (!event.shiftKey && Math.abs(data.spinY) > 0) {
-                scrollBodyView.scrollTop += Math.ceil(data.pixelY / 5);
-            } else{
-                //when wheel with shiftKey, why spinY is 120 but spinX is 0?
+                const maxScrollTop = scrollBodyView.scrollHeight - scrollBodyView.clientHeight;
+                let newTop, scrollv = data.spinY * 100; //向下正值
+                //取消之前的
+                if (this._animScrollTop) {
+                    this._animScrollTop.cancel();
+                    //在之前的预期结果上继续
+                    const {from, to} = this._animScrollTop;
+                    if ((from - to) * scrollv > 0) { //同方向
+                        newTop = this.scrollTop + scrollv;
+                    } else {
+                        newTop = this._animScrollTop.to + scrollv;
+                    }
+                } else {
+                    //在当前的结果上继续
+                    newTop = this.scrollTop + scrollv;
+                }
+                //格式化越界值
+                newTop = clamp(newTop, 0, maxScrollTop);
+                //开始新的动画
+                if (newTop !== this.scrollTop) {
+                    this._animScrollTop = animationScrollValue(this.scrollTop, newTop, (res) => {
+                        this.scrollTop = res.value;
+                    }, () => {
+                        this._animScrollTop = null;
+                    })
+                }
+            } else {
+                //when wheel with shiftKey, why spinY is 1 but spinX is 0?
                 let spin = Math.abs(data.spinX) || Math.abs(data.spinY);
-                if(event.shiftKey && spin){
-                    scrollBodyView.scrollLeft += Math.ceil((data.pixelX||data.pixelY) / 5);
+                if (event.shiftKey && spin) {
+                    const maxScrollLeft = scrollBodyView.scrollWidth - scrollBodyView.clientWidth;
+                    let newLeft, scrollv = (data.spinX || data.spinY) * 100;
+                    if (this._animScrollLeft) {
+                        this._animScrollLeft.cancel();
+                        newLeft = this._animScrollLeft.to + scrollv;
+                    } else {
+                        newLeft = this.scrollLeft + scrollv;
+                    }
+                    newLeft = clamp(newLeft, 0, maxScrollLeft);
+                    if (newLeft !== this.scrollLeft) {
+                        this._animScrollLeft = animationScrollValue(this.scrollLeft, newLeft, (res) => {
+                            this.scrollLeft = res.value;
+                        }, () => {
+                            this._animScrollLeft = null;
+                        });
+                    }
                 }
             }
         },
@@ -651,8 +692,9 @@ export default {
                 }
             }
             //update header
-            scrollHeaderView && (scrollHeaderView.scrollLeft = this.scrollLeft);
-            scrollFooterView && (scrollFooterView.scrollLeft = this.scrollLeft);
+            [scrollBodyView, scrollHeaderView, scrollFooterView].forEach(i => {
+                i && (i.scrollLeft = this.scrollLeft);
+            });
         },
         'store.checkTrigger': function () {
             this.dispatchEvent(TableEvent.CheckChange, this.store.checkedSet /*readOnly*/);

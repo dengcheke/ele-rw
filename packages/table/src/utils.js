@@ -180,18 +180,32 @@ export const walkTreeNode = function (root, cb, childrenKey = 'children', dfs = 
     }
 }
 Object.defineProperty(walkTreeNode, 'STOP', {
-    value: Symbol()
+    value: window.Symbol ? Symbol() : '随便一个唯一值'
 })
 
 
-const a = 12.0128358864784, b = 0.542452259603295;
+const baseFrameMap = [3, 6, 8, 9, 10, 11, 12, 13, 13, 14, 15, 15, 16, 17, 17]
+const _fMap = {};
 
-/*
-*  获取滚动scrollValue值需要的时间,最多800ms
-*  y=ax^b,
-*/
-function getScrollTotalTime(scrollValue) {
-    return Math.min(a * Math.pow(scrollValue, b) >> 0, 800);
+function getScrollTotalTimes(v) {
+    if (_fMap[v]) return _fMap[v / 20 >> 0] * 16.66;
+    let f = getFrame(v, Math.ceil(Math.log2(v / 300)));
+    v > 160 && (f += 1);
+    f = Math.min(40, f);
+    return f * 16.66;
+
+    function getFrame(v, e) {
+        if (e <= 0) {
+            return baseFrameMap[(v / 20 - 1) >> 0];
+        } else {
+            const idx = v / 20 >> 0;
+            if (_fMap[idx]) return _fMap[idx];
+            const _v = 300 * Math.pow(2, e - 1);
+            const res = getFrame(_v, e - 1) + (v - _v) / (20 * (e + 1)) >> 0;
+            _fMap[idx] = res;
+            return res;
+        }
+    }
 }
 
 /**
@@ -200,17 +214,20 @@ function getScrollTotalTime(scrollValue) {
  * @param to, 结束值
  * @param rafCb, 回调函数,每帧一次
  */
-export function animationScrollTop(from, to, rafCb, isDone) {
+export function animationScrollValue(from, to, rafCb, isDone) {
+    if(from===to) throw  new Error('from和to不能相同');
+    if(typeof rafCb !== 'function') throw  new Error('rafcb must be function');
     //总值
     const scrollValue = to - from;
     //总时间
-    const totalTime = getScrollTotalTime(Math.abs(scrollValue));
+    const totalTime = getScrollTotalTimes(Math.abs(scrollValue));
     let timer;
     const res = {
         from: from,
         to: to,
         totalTime: totalTime,
         walkTime: 0,//已经走过时间
+        delta: 0,
         value: from,//当前值,
         isDone: false, //是否已完成
         cancel: () => {
@@ -221,23 +238,30 @@ export function animationScrollTop(from, to, rafCb, isDone) {
     timer = requestAnimationFrame(function step() {
         let _now = performance.now(), cancel = false;
         const walkTime = (_now - now) >> 0;
+        now = _now;
         res.walkTime += walkTime;
         if (res.walkTime > res.totalTime) {
             res.walkTime = res.totalTime;
             cancel = true;
         }
         const percent = res.walkTime / res.totalTime;
-        const [x, y] = threeBezier(percent, [0, 0], [1, 1], [0.5, 1], [0.5, 0]);
-        res.value = (scrollValue * y >> 0) + from; //新值
+        const [x, y] = threeBezier(percent,
+            [0, 0], [1, 1],
+            [0.5, 0.1], [0.5, 0.9]);
+        let newValue = (scrollValue * y >> 0) + from; //新值
+        res.delta = newValue - res.value;
+        //console.log(res.delta)
+        res.value = newValue;
         if (cancel) {
             res.cancel();
             res.isDone = true;
-            isDone();
+            isDone instanceof Function && isDone.call(res,res);
         } else {
             timer = requestAnimationFrame(step);
         }
-        rafCb(res);
-    })
+        rafCb.call(res,res);
+    });
+    return res;
 }
 
 /**
@@ -248,7 +272,7 @@ export function animationScrollTop(from, to, rafCb, isDone) {
  * @param {Array} cp1 控制点1
  * @param {Array} cp2 控制点2
  */
-function threeBezier(t, p1, cp1, cp2, p2) {
+function threeBezier(t, p1, p2, cp1, cp2,) {
     const [x1, y1] = p1;
     const [x2, y2] = p2;
     const [cx1, cy1] = cp1;
