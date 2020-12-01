@@ -15,7 +15,7 @@ new Vue({
                 },
                 {key: 'b', label: 'b', fixed:'right',minWidth: 200}
             ],
-            tableData: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0].map((v,idx)=>{return {a:idx,b:'xxxx'}}),
+            tableData:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0].map((v,idx)=>{return {a:idx,b:'xxxx'}}),
             footerData: [
                 {a: 'footer-1'},
                 {a: 'footer-2'},
@@ -30,9 +30,11 @@ new Vue({
                 tableData: this.tableData,
                 footerData:this.footerData,
                 align: 'center',
-                height: '100%',
+                height: 'auto',
                 rowKey: 'a',
                 treeNodeKey: '_check',
+                minHeight:300,
+                maxHeight:500
             },
             scopedSlots: {
                 expand: ({row, idx}) => {
