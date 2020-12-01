@@ -9,7 +9,7 @@
                 <div class="table__body-wrapper" ref="bodyWrap"
                      @scroll.passive="handleScroll($event)"
                      @mouseleave="mouseLeaveTable">
-                    <!--监听table变化,resize-observer-polyfill无法监听table,包装一下,触发滚动条更新-->
+                    <!--监听table变化,resize-observer-polyfill无法监听table,包装一下-->
                     <div class="resize-observer-wrapper" ref="bodyResizeWrap"
                          style="display: inline-block;vertical-align: top">
                         <table-body/>
@@ -51,7 +51,17 @@
             <bar vertical :move="moveY" :size="sizeHeight" ref="barY"
                  :style="{top:headerWrapHeight+'px',bottom:footerWrapHeight+'px'}"/>
             <bar :move="moveX" :size="sizeWidth" ref="barX"/>
-            <empty-slot v-show="empty" style="color:white;flex:1 0 0"/>
+            <empty-slot v-show="empty" :style="{
+                color:'white',
+                position:'absolute',
+                top:headerWrapHeight+'px',
+                bottom:footerWrapHeight+'px',
+                left:0,
+                right:0,
+                height:'auto',
+                width:'auto',
+                backgroundColor:'#021828'
+            }"/>
         </div>
     </div>
 </template>
@@ -229,7 +239,7 @@ export default {
         return {
             headerWrapHeight: 0, //header容器高度
             bodyWrapHeight: 0, //body容器高度
-            bodyWrapWidth: 0,//body容器宽度
+            tableBodyHeight: 0,//tableBody的高度
             footerWrapHeight: 0,//footer 容器高度
 
             //滚动相关
@@ -287,13 +297,13 @@ export default {
         calcInnerStyle() {
             const style = {}, W = this.containerWidth;
             if (!W) return;
-            /*如果数据为空，bodyWrap不可见，宽度为0，用tableBody代替*/
-            style.width = Math.min(W, (this.bodyWrapWidth || this.tableBodyWidth)) + 'px';
+            const fixedWidth = this.fixedLeftWidth + this.fixedRightWidth;
+            style.width = clamp(this.tableBodyWidth, 0, Math.max(fixedWidth, W)) + 'px';
             if (this.height === 'auto') { //内容自增
                 const min = this.minHeight, max = this.maxHeight;
                 let contentH = this.headerWrapHeight + this.footerWrapHeight;
                 if (!this.empty) {
-                    contentH += this.bodyWrapHeight;
+                    contentH += this.tableBodyHeight;
                 }
                 if (min && !max) {
                     style.height = Math.max(contentH, min) + 'px';
@@ -329,19 +339,17 @@ export default {
                     } else if (target === headerWrap) {
                         this.headerWrapHeight = headerWrap.offsetHeight;
                     } else if (target === bodyWrap) {
-                        if (!this.empty) {
-                            this.bodyWrapHeight = bodyWrap.offsetHeight;
-                            this.bodyWrapWidth = bodyWrap.offsetWidth;
-                        }
+                        this.bodyWrapHeight = bodyWrap.offsetHeight;
                     } else if (target === footerWrap) {
                         this.footerWrapHeight = footerWrap.offsetHeight;
+                    } else if (target === bodyResizeWrap) {
+                        this.tableBodyHeight = bodyResizeWrap.clientHeight;
                     }
                 });
                 this.$nextTick(() => {
                     this.updateScrollBar();
                 });
             });
-            //bodyResizeWrap 只需要监听,触发滚动条更新即可,不需要额外的记录
             [el, headerWrap, bodyWrap, bodyResizeWrap, footerWrap].forEach(i => ro.observe(i));
             this.$once("hooK:beforeDestroy", () => {
                 ro.disconnect();
