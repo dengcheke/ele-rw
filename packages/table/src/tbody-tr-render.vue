@@ -180,6 +180,8 @@ export default {
                 let tdAttr = {
                     class: {
                         'is-hidden': colNode.fixed !== fixed,
+                        'no-right-border': colNode._noRightBorder,
+                        'no-shadow-right': colNode._noShadowRightBorder
                     },
                     attrs: {
                         'data-col-uid': colNode._uid
@@ -187,7 +189,13 @@ export default {
                     key: colNode.key
                 };
                 const col = colNode.col;
-                const args = {row: row, rowIndex: index, $rowIndex:domIndex, col: col, $colIndex: colIndex};
+                const args = {
+                    row: row,
+                    rowIndex: index,
+                    $rowIndex:domIndex,
+                    col: col,
+                    $colIndex: colIndex
+                };
                 //span method
                 if (this.table.spanMethod && colNode.type === 'text') {
                     const res = this.table.spanMethod.call(null, args)

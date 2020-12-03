@@ -8,7 +8,8 @@ export const ExpandTreeRow = 'expand-tree-row'; //fn (row, expanded, treeExpandS
 export const TreeExpandChange = 'tree-expand-change'; // fn (treeExpandSet)
 
 export const ClickRow = 'click-row';// fn ( { row, rowIndex, $rowIndex, col, event})
-export const SortChange = 'sort-change'; // fn ( colNode, allSortColNode )
+export const ChangeColSort = 'change-col-sort'; // fn(col,sort,allSortColNode);
+export const SortChange = 'sort-change'; // fn (allSortColNode )
 export const TableEvent = {
     CheckRow:CheckRow,
     CheckChange:CheckChange,
@@ -17,5 +18,6 @@ export const TableEvent = {
     ExpandTreeRow:ExpandTreeRow,
     TreeExpandChange:TreeExpandChange,
     ClickRow:ClickRow,
-    SortChange:SortChange
+    SortChange:SortChange,
+    ChangeColSort:ChangeColSort
 }

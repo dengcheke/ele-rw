@@ -37,7 +37,8 @@ export function ColumnNode(col) {
         parent: null,//父节点
         children: [],//子节点,columnNode
 
-        _noRightBorder: false, //表头td 没有右border
+        _noRightBorder:false,//是父节点最后的一个子节点
+        _noShadowRightBorder:false,
     };
     Object.defineProperty(node, '_uid', {
         value: `col_${getColId()}`,
@@ -62,7 +63,7 @@ const TableStore = Vue.extend({
                 show:,
                 treeExpand:
             }*/
-        this.treeData =  new Map();
+        this.treeData = new Map();
         return {
             containerWidth: 0,//容器宽度,列宽%以此为基准
             tableBodyWidth: 0,//tbody内容宽度
@@ -81,7 +82,7 @@ const TableStore = Vue.extend({
 
             flatDfsData: [],//tableData深度遍历的展开数据,
             renderList: [],//当前渲染列表,tableData 展开数据一部分,包含treeExpand, expand
-            renderListTrigger:1,//渲染列表变化
+            renderListTrigger: 1,//渲染列表变化
 
             selectRow: null,
             select$Idx: null, //dom index
@@ -92,7 +93,8 @@ const TableStore = Vue.extend({
             checkNums: 0,
             checkTrigger: 1, //勾选项变化,不影响renderList, table: emit event | tobody: update class
             expandTrigger: 1, //展开行变化,影响renderList,  table: emit event,
-            treeExpandTrigger: 1//树形展开变化,影响renderList, table: emit event
+            treeExpandTrigger: 1,//树形展开变化,影响renderList, table: emit event
+            sortChangeTrigger:1,
         }
     },
     methods: {
@@ -112,11 +114,18 @@ const TableStore = Vue.extend({
                 }
             }
         },
-        _setBorderFlag(nodes) {
+        _setNodeOtherInfo(nodes) {
             const last = nodes[nodes.length - 1];
             last._noRightBorder = true;
+            nodes.find((item,idx)=>{
+                let i = nodes[idx+1];
+                if(item.fixed==='left' && i && i.fixed!=='left'){
+                    return (item._noShadowRightBorder = true);
+                }
+            });
             const childs = last.children || [];
-            childs.length && this._setBorderFlag(childs);
+            childs.length && this._setNodeOtherInfo(childs);
+
         },
         checkFixedCol(cols) {
             const left = [], middle = [], right = [];
@@ -256,20 +265,40 @@ const TableStore = Vue.extend({
                 if (cur.fixed === RIGHT) fixedRight += cur.width;
                 return pre;
             }, 0);
-
+            this.fixedLeftWidth = fixedLeft;
+            this.fixedRightWidth = fixedRight;
             //*********这一步可以不做
             const ROOTS = this.columnLevelMap[0];
             ROOTS.forEach(node => {
                 !node.isLeaf && this._updateNodeWidthInfo(node);
             });
-            this._setBorderFlag(ROOTS);
-            //*********
-            this.fixedLeftWidth = fixedLeft;
-            this.fixedRightWidth = fixedRight;
+            this._setNodeOtherInfo(ROOTS);
+            //********
         },
 
+        //改变一列的宽度
+        changeColWidth(colNode, delta) {
+            const colIndex = this.leafColumns.indexOf(colNode);
+            if (colIndex === -1) return;
+            //更新colNode宽度
+            colNode.width += delta;
+            //tableBodyWidth,fixedLeftWidth,fixedRightWidth
+            let fixedLeft = 0, fixedRight = 0;
+            this.tableBodyWidth = this.leafColumns.reduce((pre, cur) => {
+                pre += cur.width;
+                if (cur.fixed === LEFT) fixedLeft += cur.width;
+                if (cur.fixed === RIGHT) fixedRight += cur.width;
+                return pre;
+            }, 0);
+            this.fixedLeftWidth = fixedLeft;
+            this.fixedRightWidth = fixedRight;
+            const ROOTS = this.columnLevelMap[0];
+            ROOTS.forEach(node => {
+                !node.isLeaf && this._updateNodeWidthInfo(node);
+            });
+        },
 
-        handleTableDataChange(){
+        handleTableDataChange() {
             this.hover$Idx = this.hoverRow = null;
             const {childrenKey} = this.table;
             //更新树节点map,要开启树结构必须指定childrenKey
@@ -306,26 +335,26 @@ const TableStore = Vue.extend({
             }, childrenKey);
         },
         //update state
-        updateTreeExpand(){
+        updateTreeExpand() {
             const oldTreeExpands = this.treeExpandedSet;
             const newTreeExpands = this.treeExpandedSet = new Set();
-            moveItemNewHasInOld(this.flatDfsData,oldTreeExpands,newTreeExpands);
+            moveItemNewHasInOld(this.flatDfsData, oldTreeExpands, newTreeExpands);
             //don't use trigger, tbody has watch renderTrigger to update row class,
             //avoid trigger update twice
-            oldTreeExpands.size && this.table.dispatchEvent(TableEvent.TreeExpandChange,newTreeExpands);
+            oldTreeExpands.size && this.table.dispatchEvent(TableEvent.TreeExpandChange, newTreeExpands);
         },
-        updateCheck(){
+        updateCheck() {
             const oldChecks = this.checkedSet;
             let newChecks = this.checkedSet = new Set();
-            moveItemNewHasInOld(this.flatDfsData,oldChecks,newChecks);
+            moveItemNewHasInOld(this.flatDfsData, oldChecks, newChecks);
             this.checkNums = newChecks.size;
-            oldChecks.size && this.table.dispatchEvent(TableEvent.CheckChange,newChecks);
+            oldChecks.size && this.table.dispatchEvent(TableEvent.CheckChange, newChecks);
         },
-        updateExpand(){
+        updateExpand() {
             const oldExpandRows = this.expandedSet;
             let newExpandRows = this.expandedSet = new Set();
-            moveItemNewHasInOld(this.flatDfsData,oldExpandRows,newExpandRows);
-            oldExpandRows.size && this.table.dispatchEvent(TableEvent.ExpandChange,newExpandRows);
+            moveItemNewHasInOld(this.flatDfsData, oldExpandRows, newExpandRows);
+            oldExpandRows.size && this.table.dispatchEvent(TableEvent.ExpandChange, newExpandRows);
         },
         //update renderList
         updateRenderList() {
@@ -352,17 +381,17 @@ const TableStore = Vue.extend({
                 }
             }).filter(Boolean);
             //插入expandrow
-            for(let i = 0; i < list.length; i++){
+            for (let i = 0; i < list.length; i++) {
                 const row = list[i];
-                if(this.expandedSet.has(row)){
-                    list.splice(i+1,0,['expand',row]);
+                if (this.expandedSet.has(row)) {
+                    list.splice(i + 1, 0, ['expand', row]);
                     i = i + 1;
                 }
             }
             this.renderList = list;
             this.renderListTrigger++;
         },
-        updateSelect(){
+        updateSelect() {
             const idx = this.renderList.indexOf(this.selectRow);
             if (idx !== -1) {
                 this.select$Idx = idx;

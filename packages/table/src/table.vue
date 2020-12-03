@@ -1,7 +1,8 @@
 <template>
     <div class="ele-rw-table outer-wrapper" :uid="'table_uid_'+_globalTableId" :style="calcElStyle()">
-        <!--innerWrap 宽高均为确定值-->
-        <div class="inner-wrapper" :style="calcInnerStyle()" v-mousewheel="handleMousewheel">
+        <!--innerWrap 宽高均为确定值,否则宽高循环依赖-->
+        <div class="inner-wrapper" :style="calcInnerStyle()" ref="innerWrap"
+             style="z-index: 0" v-mousewheel="handleMousewheel">
             <div class="table-main">
                 <div class="table__header-wrapper" ref="headerWrap">
                     <table-header/>
@@ -19,7 +20,7 @@
                     <table-footer/>
                 </div>
             </div>
-            <div class="table__fixed--left" v-if="fixedLeftCount"
+            <div class="table__fixed--left" style="z-index: 1" v-if="fixedLeftCount"
                  :class="{'fixed-shadow':showLeftShadow}"
                  :style="{width:fixedLeftWidth+'px'}">
                 <div class="table__header-wrapper fixed-left">
@@ -33,7 +34,7 @@
                     <table-footer fixed="left"/>
                 </div>
             </div>
-            <div class="table__fixed--right" v-if="fixedRightCount"
+            <div class="table__fixed--right" style="z-index: 2" v-if="fixedRightCount"
                  :class="{'fixed-shadow':showRightShadow}"
                  :style="{ width:fixedRightWidth+'px'}">
                 <div class="table__header-wrapper fixed-right"
@@ -44,24 +45,17 @@
                      :style="{height:bodyWrapHeight+'px'}">
                     <table-body fixed="right" style="position: absolute;right: 0;top:0;"/>
                 </div>
-                <div class="table__footer-wrapper fixed-right">
-                    <table-footer fixed="right"/>
+                <div class="table__footer-wrapper fixed-right"
+                     :style="{height: footerWrapHeight+'px'}">
+                    <table-footer fixed="right" style="position: absolute;right: 0;top:0;"/>
                 </div>
             </div>
-            <bar vertical :move="moveY" :size="sizeHeight" ref="barY"
+            <bar vertical :move="moveY" :size="sizeHeight" ref="barY" style="z-index: 3"
                  :style="{top:headerWrapHeight+'px',bottom:footerWrapHeight+'px'}"/>
-            <bar :move="moveX" :size="sizeWidth" ref="barX"/>
-            <empty-slot v-show="empty" :style="{
-                color:'white',
-                position:'absolute',
-                top:headerWrapHeight+'px',
-                bottom:footerWrapHeight+'px',
-                left:0,
-                right:0,
-                height:'auto',
-                width:'auto',
-                backgroundColor:'#021828'
-            }"/>
+            <bar :move="moveX" :size="sizeWidth" ref="barX" style="z-index: 3"/>
+            <empty-slot v-show="empty" :style="calcEmptyStyle()" style="z-index: 4"/>
+            <div v-if="isDragCol" class="drag-line" style="z-index: 5"
+                 :style="{top:dragLineTop+'px',left:dragLineLeft+'px'}"/>
         </div>
     </div>
 </template>
@@ -77,7 +71,7 @@ import TableBody from './table-body';
 import TableFooter from './table-footer';
 import ResizeObserver from 'resize-observer-polyfill';
 import Bar from '../../bar';
-import {animationScrollValue, getTableId} from "ele-rw-ui/packages/table/src/utils";
+import {animationScrollValue, getTableId} from "./utils";
 
 export default {
     name: "EleRwTable",
@@ -94,35 +88,18 @@ export default {
         rowKey: {
             type: String | Function,
             default: null,
-            desc: '每一行的id字段'
         },
         childrenKey: {
             type: String,
             default: 'children',
-            desc: '树形展开的子节点列表字段'
         },
         treeNodeKey: {
             type: String,
             default: null,
-            desc: '显示树形展开按钮的key'
         },
         tableCols: {
             type: Array,
             default: () => [],
-            /*{
-                type:'check'|'expand'|'text',
-                key: 'col列键值',
-                lable: '显示的名称',
-                render: (h,{row,rowIndex,col,colIndex})=>'cell渲染函数，不指定则默认 row[key]',
-                renderHeader: (h,{col,colIndex})=>'表头渲染，不指定默认label',
-                sortable: true,//是否参与排序
-                sort:'asc'|'desc',//初始排序，
-                fixed:'left'|'right',//是否固定列,
-                cellStyle: Object | Function({row,rowIndex,col,colIndex}),
-                cellClass: string | Object | Array<string> | Function({row,rowIndex,col,colIndex})
-                headerCellStyle: Object | Function({row,rowIndex,col,colIndex}),
-                headerCellClass: string | Object |Array<string> | Function({row,rowIndex,col,colIndex})
-            }*/
         },
         tableData: {
             type: Array,
@@ -144,6 +121,10 @@ export default {
         minHeight: {
             type: Number,
             default: null
+        },
+        resizable: {
+            type: Boolean,
+            default: false
         },
         align: {
             type: String,
@@ -250,6 +231,10 @@ export default {
             scrollLeft: 0, //当前scrollLeft值
             scrollTop: 0, //当前scrollTop值
             scrollPosition: 'left',
+
+            isDragCol: false,//在拖拽列
+            dragLineLeft: 0,//拖拽线位置
+            dragLineTop: 0,
         }
     },
     mounted() {
@@ -285,6 +270,19 @@ export default {
         }
     },
     methods: {
+        calcEmptyStyle() {
+            return {
+                color: 'white',
+                position: 'absolute',
+                top: this.headerWrapHeight + 'px',
+                bottom: this.footerWrapHeight + 'px',
+                left: 0,
+                right: 0,
+                height: 'auto',
+                width: 'auto',
+                backgroundColor: '#021828'
+            }
+        },
         /// layout and event
         calcElStyle() {
             const style = {};
@@ -436,6 +434,8 @@ export default {
             this.store.hover$Idx = this.store.hoverRow = null;
         },
 
+
+
         /*代理子组件事件*/
         dispatchEvent(topic, ...args) {
             this.$emit(topic, ...args);
@@ -463,7 +463,6 @@ export default {
             })
         },
 
-
         //设置当前行,不传则取消当前行
         setCurrentRow(row) {
             const store = this.store;
@@ -478,6 +477,27 @@ export default {
                     store.selectRow = store.select$Idx = null;
                 }
             }
+        },
+        //设置一列的排序,
+        setColumnSort(col,sort=null,emit=true){
+            const node = this.store.sortColumns.find(i=>{
+                return i.key === col.key /*object has key*/
+                    || i.key === col   /*string*/
+                    || i.col === col; /*object ===*/
+            });
+            if(node.sort !== sort){
+                node.sort = sort;
+                this.store.sortChangeTrigger++;
+                emit && this.dispatchEvent(TableEvent.ChangeColSort, node.col, node.sort, this.store.sortColumns);
+            }
+        },
+        //移除所有的排序
+        clearAllSort(){
+            let change = false;
+            this.store.sortColumns.forEach(node=>{
+                isDefined(node.sort) && (change = true) && (node.sort = null);
+            });
+            change && this.store.sortChangeTrigger++;
         },
 
         //勾选节点，不改变渲染列表，只改变class
@@ -691,15 +711,6 @@ export default {
                 i && (i.scrollLeft = this.scrollLeft);
             });
         },
-        'store.checkTrigger': function () {
-            this.dispatchEvent(TableEvent.CheckChange, this.store.checkedSet /*readOnly*/);
-        },
-        'store.expandTrigger': function () {
-            this.dispatchEvent(TableEvent.ExpandChange, this.store.expandedSet /*readOnly*/);
-        },
-        'store.treeExpandTrigger': function () {
-            this.dispatchEvent(TableEvent.TreeExpandChange, this.store.treeExpandedSet /*readOnly*/);
-        },
         tableCols: {
             handler: function (cols) {
                 if (cols && cols.length) {
@@ -723,7 +734,19 @@ export default {
                 this.store.handleTableDataChange();
             },
             immediate: true
-        }
+        },
+        'store.checkTrigger': function () {
+            this.dispatchEvent(TableEvent.CheckChange, this.store.checkedSet /*readOnly*/);
+        },
+        'store.expandTrigger': function () {
+            this.dispatchEvent(TableEvent.ExpandChange, this.store.expandedSet /*readOnly*/);
+        },
+        'store.treeExpandTrigger': function () {
+            this.dispatchEvent(TableEvent.TreeExpandChange, this.store.treeExpandedSet /*readOnly*/);
+        },
+        'store.sortChangeTrigger': function (){
+            this.dispatchEvent(TableEvent.SortChange,this.store.sortColumns);
+        },
     },
 }
 </script>

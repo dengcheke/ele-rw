@@ -1,10 +1,9 @@
 <script type="text/jsx">
 import {ASC, DESC} from "./store";
-import {mapping} from "@src/utils/index";
-import {addClass, removeClass} from "@src/utils/dom";
+import {isDefined, mapping} from "@src/utils/index";
+import {addClass, off, on, removeClass} from "@src/utils/dom";
 import {objectToStyleString} from "@src/utils";
 import {resolveClass, resolveStyle} from "ele-rw-ui/packages/table/src/utils";
-import {TableEvent} from "./event-name";
 
 export default {
     name: "table-header",
@@ -26,6 +25,44 @@ export default {
         }
     },
     methods: {
+        handleResizeCol(event, colNode, positiveDirec) {
+            document.body.style.userSelect = 'none';
+            const x = event.clientX; //当前页面点击X
+            let finalX = null;
+            this.table.isDragCol = true;
+            const {innerWrap} = this.table.$refs;
+            const wrapRect = innerWrap.getBoundingClientRect();
+            const tdRect = event.currentTarget.parentNode.getBoundingClientRect();
+            this.table.dragLineTop = tdRect.top - wrapRect.top;
+            const left = this.table.dragLineLeft =
+                tdRect.left - wrapRect.left + (positiveDirec === 'left' ? 0 : tdRect.width);
+            const onMouseMove = (e) => {
+                const colAdd = (e.clientX - x) * (positiveDirec === 'right' ? 1 : -1);
+                const width = colNode.width + colAdd;
+                //最低宽度32
+                if (width < 32) return;
+                //左右固定列最小间隔32
+                const {fixedLeftWidth, fixedRightWidth} = this.store;
+                if (fixedLeftWidth + fixedRightWidth + colAdd + 32 > wrapRect.width) return;
+                finalX = e.clientX;
+                this.table.dragLineLeft = left + e.clientX - x;
+            }
+            const onMouseUp = (e) => {
+                document.body.style.userSelect = null;
+                if (isDefined(finalX)) {
+                    const colAdd = (finalX - x) * (positiveDirec === 'right' ? 1 : -1);
+                    this.store.changeColWidth(colNode, colAdd);
+                }
+                this.table.isDragCol = false;
+                this.table.dragLineTop = 0;
+                this.table.dragLineLeft = 0;
+                off(document, 'mousemove', onMouseMove);
+                off(document, 'mouseup', onMouseUp);
+            }
+            on(document, 'mousemove', onMouseMove);
+            on(document, 'mouseup', onMouseUp);
+            return false;
+        },
         handleMouseEnter(e) {
             //check prop
             const {enableHighlightCol, highlightColHeaderCellStyle, highlightColRowCellStyle} = this.table;
@@ -149,12 +186,7 @@ export default {
                     },
                     on: {
                         click: (e) => {
-                            if (colNode.sort === ASC) {
-                                colNode.sort = null;
-                            } else {
-                                colNode.sort = ASC;
-                            }
-                            this.table.dispatchEvent(TableEvent.SortChange, colNode, this.store.sortColumns);
+                            this.table.setColumnSort(colNode, colNode.sort === ASC ? null : ASC);
                         }
                     }
                 }, descAttrs = {
@@ -165,12 +197,7 @@ export default {
                     },
                     on: {
                         click: (e) => {
-                            if (colNode.sort === DESC) {
-                                colNode.sort = null;
-                            } else {
-                                colNode.sort = DESC;
-                            }
-                            this.table.dispatchEvent(Event.SortChange, colNode, this.store.sortColumns);
+                            this.table.setColumnSort(colNode, colNode.sort === DESC ? null : DESC);
                         }
                     }
                 };
@@ -194,23 +221,26 @@ export default {
                 const col = colNode.col;
                 const args = {
                     row: cols,
-                    rowIndex: level,
+                    $rowIndex: level,
                     col: col,
-                    colIndex: colIndex
+                    $colIndex: colIndex
                 };
-                const cellContent = this.getCellContent(h, colNode, args, hasCheckCol)
+                const cellContent = this.getCellContent(h, colNode, args, hasCheckCol);
+                const isHiddenCol = colNode.fixed !== this.fixed;
+
                 const tdAttr = {
                     class: {
-                        'is-hidden': colNode.fixed !== this.fixed,
+                        'is-hidden': isHiddenCol,
                         'is-leaf': colNode.isLeaf,
+                        'no-right-border': colNode._noRightBorder,
+                        'no-shadow-right': colNode._noShadowRightBorder
                     },
                     style: {
-                        borderRight: colNode._noRightBorder ? 'none' : null,
                         textAlign: colNode.headerAlign || this.table.align,
                     },
                     key: colNode.key,
                     attrs: {
-                        rowspan: colNode.isLeaf ? this.maxLevel - colNode.level : 1,
+                        rowspan: colNode.isLeaf ? this.maxLevel - colNode.level + 1 : 1,
                         colspan: colNode.leafNum || 1,
                         'data-col-uid': colNode._uid,
                         'data-col-level': colNode.level
@@ -220,31 +250,45 @@ export default {
                         mouseleave: this.handleMouseLeave
                     }
                 };
-                return <td {...tdAttr}>
-                    <div {...{
-                        class: this.getCellClass(colNode, args),
-                        style: this.getCellStyle(colNode, args)
-                    }}>
-                        {cellContent}
-                    </div>
-                </td>
+                const children = [<div {...{
+                    class: this.getCellClass(colNode, args),
+                    style: this.getCellStyle(colNode, args)
+                }}>{cellContent}</div>];
+                if (this.table.resizable && !isHiddenCol && colNode.isLeaf) {
+                    const pos = this.fixed === 'right' ? 'left' : 'right';
+                    const resizeHandle = <div  {...{
+                        class: ["resize-handle", `is-${pos}`],
+                        on: {
+                            mousedown: (e) => {
+                                this.handleResizeCol(e, colNode, pos);
+                            }
+                        }
+                    }}/>
+                    children.push(resizeHandle)
+                }
+                return <td {...tdAttr}>{children}</td>
             });
-            const args = {row: cols, rowIndex: level};
+            const args = {row: cols, $rowIndex: level};
             trs.push(<tr {...{
                 class: {
                     'has-check': !!hasCheckCol.count,
+                    [`level-${level}`]: true,
                     ...this.getTrClass(args)
                 },
                 style: this.getTrStyle(args),
             }}>{tds}</tr>);
         }
-        return <table class="table__header" attrs={{
-            cellspacing: "0",
-            cellpadding: "0",
-            border: "0"
-        }}
-                      style={{width: this.tableBodyWidth + 'px'}}>
-            {colGroup}
+        return <table {...{
+            class: ['table__header'],
+            style: {
+                width: this.tableBodyWidth + 'px'
+            },
+            attrs: {
+                cellspacing: "0",
+                cellpadding: "0",
+                border: "0"
+            }
+        }}>{colGroup}
             <thead>
             {trs}
             </thead>

@@ -82,6 +82,8 @@ export default {
             let tdAttr = {
                 class: {
                     'is-hidden': colNode.fixed !== fixed,
+                    'no-right-border': colNode._noRightBorder,
+                    'no-shadow-right': colNode._noShadowRightBorder
                 },
                 attrs: {
                     'data-col-uid': colNode._uid
