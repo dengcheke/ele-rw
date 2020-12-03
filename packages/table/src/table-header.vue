@@ -134,8 +134,12 @@ export default {
         },
         getCellStyle(colNode, args) {
             let _cellStyle = {};
+            _cellStyle.textAlign = colNode.headerAlign || this.table.align;
             if (this.table.headerCellStyle) {
-                _cellStyle = resolveStyle(this.table.headerCellStyle, args);
+                _cellStyle = {
+                    ..._cellStyle,
+                    ...resolveStyle(this.table.headerCellStyle, args)
+                }
             }
             if (colNode.col.headerCellStyle) {
                 _cellStyle = {
@@ -143,7 +147,6 @@ export default {
                     ...resolveStyle(colNode.col.headerCellStyle, args)
                 }
             }
-            colNode.headerAlign && (_cellStyle.alignItems = colNode.headerAlign)
             return _cellStyle
         },
         getCellClass(colNode, args) {

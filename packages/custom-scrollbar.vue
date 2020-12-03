@@ -1,9 +1,9 @@
 <template>
     <div class="custom-scrollbar" :style="calcElStyle()">
-        <div class="scrollbar__wrap" ref="wrap" v-mousewheel="handleMouseWheel"
+        <div class="scrollbar__wrap" ref="wrap"
              :style="calcWrapStyle()" @scroll.passive="handleScroll($event)">
             <div class="scrollbar__view" :style="viewStyle" :class="viewClass" ref="view">
-                <slot></slot>
+                <slot/>
             </div>
         </div>
         <Bar :move="moveX" :size="sizeWidth" ref="barX"/>
@@ -14,22 +14,13 @@
 <script>
 import Bar from './bar';
 import ResizeObserver from 'resize-observer-polyfill';
-import {HOOK_BEFOREDESTROY} from "@config/global-const";
-import {getScrollBarWidth, on} from "../src/utils/dom";
+import {getScrollBarWidth, on} from "@src/utils/dom";
 import {clamp} from "../src/utils/index";
-import {MouseWheel} from "@src/plugins/vue/direc/v-mousewheel";
 
 export default {
-    name: "test-scrollbar",
+    name: "custom-scrollbar",
     components: {Bar},
-    directives: {
-        'mousewheel': MouseWheel
-    },
     props: {
-        onMousewheel: {
-            type: Function,
-            default: null
-        },
         viewClass: {
             type: Array | Object,
             default: () => []
@@ -74,11 +65,6 @@ export default {
         this.init();
     },
     methods: {
-        handleMouseWheel(e, data) {
-            if (this.onMousewheel) {
-                this.onMousewheel(e, data)
-            }
-        },
         init() {
             const un = on(window, 'resize', () => {
                 const dpr = window.devicePixelRatio;
@@ -89,7 +75,6 @@ export default {
             });
             const el = this.$el, view = this.$refs.view;
             const ro = new ResizeObserver(entries => {
-                //if (el.clientHeight === 0 || el.clientWidth === 0) return;
                 let update = false;
                 const elEn = entries.find(i => i.target === el);
                 if (elEn) {

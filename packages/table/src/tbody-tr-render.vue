@@ -99,8 +99,12 @@ export default {
         },
         getCellStyle(colNode, args) {
             let _cellStyle = {};
+            _cellStyle.textAlign = colNode.align || this.table.align;
             if (this.table.cellStyle) {
-                _cellStyle = resolveStyle(this.table.cellStyle, args);
+                _cellStyle = {
+                    ..._cellStyle,
+                    ...resolveStyle(this.table.cellStyle, args)
+                }
             }
             if (colNode.col.cellStyle) {
                 _cellStyle = {
@@ -108,7 +112,6 @@ export default {
                     ...resolveStyle(colNode.col.cellStyle, args)
                 }
             }
-            colNode.align && (_cellStyle.alignItems = colNode.align);
             return _cellStyle
         },
         getCellContent(h, colNode, args) {

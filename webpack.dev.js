@@ -5,7 +5,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 module.exports = {
     mode: 'development',
     entry: {
-        app: path.resolve(__dirname, './test/main.js')
+        app: path.resolve(__dirname, './example/main.js')
     },
     output: {
         path: path.resolve(__dirname, './dist'),
@@ -63,7 +63,7 @@ module.exports = {
         new VueLoaderPlugin(),
 
         new HtmlWebpackPlugin({
-            template: path.resolve(__dirname, './test/index.html'),
+            template: path.resolve(__dirname, './example/index.html'),
             title: 'Output Management'
         })
     ]

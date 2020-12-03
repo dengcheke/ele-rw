@@ -128,7 +128,7 @@ export default {
         },
         align: {
             type: String,
-            default: 'left',//right center  同align-items
+            default: 'left',//right center  同text-align
         },
         indent: {
             type: Number,
@@ -379,6 +379,7 @@ export default {
         handleMousewheel(event, data) {
             const bodyWrap = this.$refs.bodyWrap;
             if (!bodyWrap) return;
+            let prevent = true;
             if (!event.shiftKey && Math.abs(data.spinY) > 0) {
                 const maxScrollTop = bodyWrap.scrollHeight - bodyWrap.clientHeight;
                 let newTop, scrollv = data.spinY * 100; //向下正值
@@ -406,6 +407,12 @@ export default {
                         this._animScrollTop = null;
                     })
                 }
+                if (
+                    (this.scrollTop === maxScrollTop && scrollv > 0)
+                    || (this.scrollTop === 0 && scrollv < 0)
+                ) {
+                    prevent = false;
+                }
             } else {
                 //when wheel with shiftKey, why spinY is 1 but spinX is 0?
                 let spin = Math.abs(data.spinX) || Math.abs(data.spinY);
@@ -426,14 +433,20 @@ export default {
                             this._animScrollLeft = null;
                         });
                     }
+                    if (
+                        (this.scrollLeft === maxScrollLeft && scrollv > 0)
+                        || (this.scrollLeft === 0 && scrollv < 0)
+                    ) {
+                        prevent = false;
+                    }
                 }
             }
+            prevent && event.preventDefault();
         },
         //鼠标离开组件时
         mouseLeaveTable() {
             this.store.hover$Idx = this.store.hoverRow = null;
         },
-
 
 
         /*代理子组件事件*/
@@ -456,7 +469,12 @@ export default {
             return this.store.flatDfsData.find(i => {
                 if (!row) return false;
                 if (typeof row === 'object') {
-                    return i === row;
+                    if(i === row){
+                        return true
+                    }else{
+                        let a = this.getRowKey(i),b = this.getRowKey(row);
+                        return a && b && a===b;
+                    }
                 } else { //默认row是id值
                     return this.getRowKey(i) === row;
                 }
@@ -479,22 +497,22 @@ export default {
             }
         },
         //设置一列的排序,
-        setColumnSort(col,sort=null,emit=true){
-            const node = this.store.sortColumns.find(i=>{
+        setColumnSort(col, sort = null, emit = true) {
+            const node = this.store.sortColumns.find(i => {
                 return i.key === col.key /*object has key*/
                     || i.key === col   /*string*/
                     || i.col === col; /*object ===*/
             });
-            if(node.sort !== sort){
+            if (node.sort !== sort) {
                 node.sort = sort;
                 this.store.sortChangeTrigger++;
                 emit && this.dispatchEvent(TableEvent.ChangeColSort, node.col, node.sort, this.store.sortColumns);
             }
         },
         //移除所有的排序
-        clearAllSort(){
+        clearAllSort() {
             let change = false;
-            this.store.sortColumns.forEach(node=>{
+            this.store.sortColumns.forEach(node => {
                 isDefined(node.sort) && (change = true) && (node.sort = null);
             });
             change && this.store.sortChangeTrigger++;
@@ -744,8 +762,8 @@ export default {
         'store.treeExpandTrigger': function () {
             this.dispatchEvent(TableEvent.TreeExpandChange, this.store.treeExpandedSet /*readOnly*/);
         },
-        'store.sortChangeTrigger': function (){
-            this.dispatchEvent(TableEvent.SortChange,this.store.sortColumns);
+        'store.sortChangeTrigger': function () {
+            this.dispatchEvent(TableEvent.SortChange, this.store.sortColumns);
         },
     },
 }
