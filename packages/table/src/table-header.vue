@@ -120,48 +120,23 @@ export default {
             </colgroup>
         },
         getTrStyle(args) {
-            let rowStyle = {};
-            if (this.table.headerRowStyle) {
-                rowStyle = resolveStyle(this.table.headerRowStyle, args);
-            }
-            return rowStyle
+            return resolveStyle(this.table.headerRowStyle, args);
         },
         getTrClass(args) {
-            let rowClass = {};
-            if (this.table.headerRowClass) {
-                rowClass = resolveClass(this.table.headerRowClass, args);
-            }
+            return resolveClass(this.table.headerRowClass, args);
         },
         getCellStyle(colNode, args) {
-            let _cellStyle = {};
-            _cellStyle.textAlign = colNode.headerAlign || this.table.align;
-            if (this.table.headerCellStyle) {
-                _cellStyle = {
-                    ..._cellStyle,
-                    ...resolveStyle(this.table.headerCellStyle, args)
-                }
+            return {
+                textAlign : colNode.headerAlign || this.table.align,
+                ...resolveStyle(this.table.headerCellStyle, args),
+                ...resolveStyle(colNode.col.headerCellStyle, args)
             }
-            if (colNode.col.headerCellStyle) {
-                _cellStyle = {
-                    ..._cellStyle,
-                    ...resolveStyle(colNode.col.headerCellStyle, args)
-                }
-            }
-            return _cellStyle
         },
         getCellClass(colNode, args) {
-            let _cellClass = {}
-            if (this.table.headerCellClass) {
-                _cellClass = resolveClass(this.table.headerCellClass, args);
+            return {
+                ...resolveClass(this.table.headerCellClass, args),
+                ...resolveClass(colNode.col.headerCellClass, args)
             }
-            if (colNode.col.headerCellClass) {
-                _cellClass = {
-                    ..._cellClass,
-                    ...resolveClass(colNode.col.headerCellClass, args)
-                }
-            }
-            _cellClass.cell = true;
-            return _cellClass;
         },
         getCellContent(h, colNode, args, hasCheckCol) {
             let headerRender = [], canSort = true;
@@ -221,26 +196,23 @@ export default {
             const cols = columns.map(i => i.col);
             let hasCheckCol = {count: 0};
             const tds = columns.map((colNode, colIndex) => {
-                const col = colNode.col;
                 const args = {
                     row: cols,
                     $rowIndex: level,
-                    col: col,
+                    col: colNode.col,
                     $colIndex: colIndex
                 };
                 const cellContent = this.getCellContent(h, colNode, args, hasCheckCol);
                 const isHiddenCol = colNode.fixed !== this.fixed;
-
                 const tdAttr = {
                     class: {
                         'is-hidden': isHiddenCol,
                         'is-leaf': colNode.isLeaf,
                         'no-right-border': colNode._noRightBorder,
-                        'no-shadow-right': colNode._noShadowRightBorder
+                        'no-shadow-right': colNode._noShadowRightBorder,
+                        ...this.getCellClass(colNode, args)
                     },
-                    style: {
-                        textAlign: colNode.headerAlign || this.table.align,
-                    },
+                    style: this.getCellStyle(colNode, args),
                     key: colNode.key,
                     attrs: {
                         rowspan: colNode.isLeaf ? this.maxLevel - colNode.level + 1 : 1,
@@ -253,10 +225,7 @@ export default {
                         mouseleave: this.handleMouseLeave
                     }
                 };
-                const children = [<div {...{
-                    class: this.getCellClass(colNode, args),
-                    style: this.getCellStyle(colNode, args)
-                }}>{cellContent}</div>];
+                const children = [<div class="cell cell--header">{cellContent}</div>];
                 if (this.table.resizable && !isHiddenCol && colNode.isLeaf) {
                     const pos = this.fixed === 'right' ? 'left' : 'right';
                     const resizeHandle = <div  {...{
@@ -274,9 +243,11 @@ export default {
             const args = {row: cols, $rowIndex: level};
             trs.push(<tr {...{
                 class: {
+                    ...this.getTrClass(args),
                     'has-check': !!hasCheckCol.count,
                     [`level-${level}`]: true,
-                    ...this.getTrClass(args)
+                    'row':true,
+                    'row--header':true
                 },
                 style: this.getTrStyle(args),
             }}>{tds}</tr>);

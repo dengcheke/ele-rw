@@ -163,7 +163,7 @@ export default {
     overflow: hidden;
 
     &:hover {
-        .scrollbar__bar {
+        &  > .scrollbar__bar {
             opacity: 1;
             transition: opacity 340ms ease-out;
         }

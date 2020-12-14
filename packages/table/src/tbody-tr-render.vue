@@ -38,7 +38,7 @@ export default {
             this.table.dispatchEvent(TableEvent.ClickRow, {
                 row: row,
                 rowIndex: this.index,
-                $rowIndex:this.domIndex,
+                $rowIndex: this.domIndex,
                 col: col,
                 event: e
             });
@@ -60,59 +60,33 @@ export default {
             this.table.toggleTreeExpanded(this.row)
         },
         getTrStyle() {
-            const {rowStyle} = this.table,
-                args = {row: this.row, rowIndex: this.index, $rowIndex:this.domIndex};
-            let trStyle = {};
-            if (rowStyle) {
-                trStyle = resolveStyle(rowStyle, args);
-            }
+            const args = {row: this.row, rowIndex: this.index, $rowIndex: this.domIndex};
+            const trStyle = resolveStyle(this.table.rowStyle, args);
             return trStyle;
         },
         getTrClass() {
-            const {rowClass} = this.table,
-                args = {row: this.row, rowIndex: this.index, $rowIndex: this.domIndex};
-            let trClass = {row: true};
-            if (rowClass) {
-                trClass = {
-                    ...trClass,
-                    ...resolveClass(rowClass, args)
-                };
-            }
+            const args = {row: this.row, rowIndex: this.index, $rowIndex: this.domIndex};
+            let trClass = {
+                ...resolveClass(this.table.rowClass, args),
+                row: true,
+            };
             if (this.treeNodeData) {
                 trClass[`row-level--${this.treeNodeData.level}`] = true;
             }
             return trClass
         },
         getCellClass(colNode, args) {
-            let _cellClass = {}
-            if (this.table.cellClass) {
-                _cellClass = resolveClass(this.table.cellClass, args);
+            return {
+                ...resolveClass(this.table.cellClass, args),
+                ...resolveClass(colNode.col.cellClass, args)
             }
-            if (colNode.col.cellClass) {
-                _cellClass = {
-                    ..._cellClass,
-                    ...resolveClass(colNode.col.cellClass, args)
-                }
-            }
-            _cellClass.cell = true;
-            return _cellClass;
         },
         getCellStyle(colNode, args) {
-            let _cellStyle = {};
-            _cellStyle.textAlign = colNode.align || this.table.align;
-            if (this.table.cellStyle) {
-                _cellStyle = {
-                    ..._cellStyle,
-                    ...resolveStyle(this.table.cellStyle, args)
-                }
+            return {
+                textAlign: colNode.align || this.table.align,
+                ...resolveStyle(this.table.cellStyle, args),
+                ...resolveStyle(colNode.col.cellStyle, args)
             }
-            if (colNode.col.cellStyle) {
-                _cellStyle = {
-                    ..._cellStyle,
-                    ...resolveStyle(colNode.col.cellStyle, args)
-                }
-            }
-            return _cellStyle
         },
         getCellContent(h, colNode, args) {
             let cellContent, addExpandNode = false;
@@ -180,24 +154,25 @@ export default {
         };
         return <tr {...trAttr}>
             {columns.map((colNode, colIndex) => {
+                const args = {
+                    row: row,
+                    rowIndex: index,
+                    $rowIndex: domIndex,
+                    col: colNode.col,
+                    $colIndex: colIndex
+                };
                 let tdAttr = {
+                    style: this.getCellStyle(colNode, args),
                     class: {
                         'is-hidden': colNode.fixed !== fixed,
                         'no-right-border': colNode._noRightBorder,
-                        'no-shadow-right': colNode._noShadowRightBorder
+                        'no-shadow-right': colNode._noShadowRightBorder,
+                        ...this.getCellClass(colNode, args),
                     },
                     attrs: {
                         'data-col-uid': colNode._uid
                     },
                     key: colNode.key
-                };
-                const col = colNode.col;
-                const args = {
-                    row: row,
-                    rowIndex: index,
-                    $rowIndex:domIndex,
-                    col: col,
-                    $colIndex: colIndex
                 };
                 //span method
                 if (this.table.spanMethod && colNode.type === 'text') {
@@ -211,10 +186,7 @@ export default {
                 //cell content
                 const cellContent = this.getCellContent(h, colNode, args);
                 return <td {...tdAttr}>
-                    <div {...{
-                        style: this.getCellStyle(colNode, args),
-                        class: this.getCellClass(colNode, args)
-                    }}>{cellContent}</div>
+                    <div class="cell">{cellContent}</div>
                 </td>
             }).filter(Boolean)}
         </tr>

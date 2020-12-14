@@ -4,7 +4,7 @@
         <div class="inner-wrapper" :style="calcInnerStyle()" ref="innerWrap"
              style="z-index: 0" v-mousewheel="handleMousewheel">
             <div class="table-main">
-                <div class="table__header-wrapper" ref="headerWrap">
+                <div class="table__header-wrapper" ref="headerWrap" v-show="showHeader">
                     <table-header/>
                 </div>
                 <div class="table__body-wrapper" ref="bodyWrap"
@@ -23,7 +23,7 @@
             <div class="table__fixed--left" style="z-index: 1" v-if="fixedLeftCount"
                  :class="{'fixed-shadow':showLeftShadow}"
                  :style="{width:fixedLeftWidth+'px'}">
-                <div class="table__header-wrapper fixed-left">
+                <div class="table__header-wrapper fixed-left" v-show="showHeader">
                     <table-header fixed="left"/>
                 </div>
                 <div class="table__body-wrapper fixed-left" ref="bodyWrapLeft"
@@ -37,7 +37,7 @@
             <div class="table__fixed--right" style="z-index: 2" v-if="fixedRightCount"
                  :class="{'fixed-shadow':showRightShadow}"
                  :style="{ width:fixedRightWidth+'px'}">
-                <div class="table__header-wrapper fixed-right"
+                <div class="table__header-wrapper fixed-right" v-show="showHeader"
                      :style="{height:headerWrapHeight+'px'}">
                     <table-header fixed="right" style="position: absolute;right: 0;top:0;"/>
                 </div>
@@ -72,7 +72,6 @@ import TableFooter from './table-footer';
 import ResizeObserver from 'resize-observer-polyfill';
 import Bar from '../../bar';
 import {animationScrollValue, getTableId} from "./utils";
-
 export default {
     name: "EleRwTable",
     directives: {
@@ -128,7 +127,7 @@ export default {
         },
         align: {
             type: String,
-            default: 'left',//right center  同text-align
+            default: null,//left right center  同text-align
         },
         indent: {
             type: Number,
@@ -148,46 +147,58 @@ export default {
             type: Boolean,
             default: true
         },
+        showHeader:{
+            type:Boolean,
+            default:true
+        },
         //style
         rowStyle: {
             type: Object | Function,
             default: null,
-            desc: 'tbody 行样式,fn({row,rowIndex)}'
         },
         rowClass: {
             type: String | Object | Array | Function,
             default: null,
-            desc: 'tbody 行class,fn({row,rowIndex)}'
         },
         cellStyle: {
             type: Object | Function,
             default: null,
-            desc: '单元格样式,fn({row,rowIndex,col,colIndex})'
         },
         cellClass: {
             type: String | Object | Array | Function,
             default: null,
-            desc: '单元格class,fn({row,rowIndex,col,colIndex})'
         },
         headerRowStyle: {
             type: Object | Function,
             default: null,
-            desc: '表头行style,fn({ row<col>, rowIndex })'
         },
         headerRowClass: {
             type: String | Object | Array | Function,
             default: null,
-            desc: '表头行class,fn({ row<col>, rowIndex })'
         },
         headerCellStyle: {
             type: Object | Function,
             default: null,
-            desc: '表头单元格样式,fn({ row<col>, rowIndex, col, colIndex })'
         },
         headerCellClass: {
             type: String | Object | Array | Function,
             default: null,
-            desc: '表头单元格class,fn({ row<col>, rowIndex, col, colIndex })'
+        },
+        footerRowStyle: {
+            type: Object | Function,
+            default: null,
+        },
+        footerRowClass: {
+            type: String | Object | Array | Function,
+            default: null,
+        },
+        footerCellStyle: {
+            type: Object | Function,
+            default: null,
+        },
+        footerCellClass: {
+            type: String | Object | Array | Function,
+            default: null,
         },
 
         enableHighlightCol: {

@@ -12,9 +12,10 @@ Vue.component('code-panel',CodePanel);
 import Scrollbar from '../packages/custom-scrollbar';
 Vue.component('scroll-bar',Scrollbar)
 import App from './app';
+import router from './router'
 new Vue({
     el:'#app',
+    router,
     render:(h)=>h(App)
 })
-
 

@@ -5,6 +5,7 @@
   "scripts": {
     "clean": "rimraf lib",
     "dev": "webpack-dev-server --config webpack.dev.js",
+    "dev-build": "webpack --config webpack.dev.js --env production",
     "build:file": "cross-env BABEL_ENV=utils babel src --out-dir lib",
     "build:component": "webpack --config webpack.component.js"
   },
@@ -24,6 +25,7 @@
     "normalize-wheel": "^1.0.1",
     "resize-observer-polyfill": "^1.5.1",
     "vue": "^2.6.12",
+    "vue-router": "^3.4.9",
     "xlsx": "^0.16.8"
   },
   "devDependencies": {

@@ -9,7 +9,7 @@
         </code-panel>
 
         <p class="tip">
-            col指定minWidth即为自定义列,将平分剩余宽度
+            col指定minWidth即为自适应列,将平分剩余宽度
         </p>
         <ele-rw-table :table-data="tableData" :table-cols="cols"/>
         <code-panel>

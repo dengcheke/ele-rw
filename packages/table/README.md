@@ -11,7 +11,7 @@
 | height              | 表格高度,为'auto'时表示自动高度,受 minHeight,maxHeight 限制,其它非'auto'字符串和数字(例如 100%, 100, 100px, calc(100% - 40px))表示高度受控 | String / Number                                                                                 | 'auto'   |                             |
 | min\-height         | 表格最小高度                                                                                                                               | Number                                                                                          |          |                             |
 | max\-height         | 表格最大高度                                                                                                                               | Number                                                                                          |          |                             |
-| align               | 表格所有 cell\(包括 header footer\)的对齐方式，同 css align\-items 属性                                                                           | String                                                                                          | 'left'   | 'left' / 'right' / 'center' |
+| align               | 表格所有 cell\(包括 header footer\)的对齐方式，同 css text-align 属性                                                                           | String                                                                                          |   | 'left' / 'right' / 'center' |
 | indent              | 树形结构的缩进                                                                                                                             | Number                                                                                          | 16       |                             |
 | expand\-render      | 展开行的渲染函数, 或者使用 scopeSlot 如<template \#expand=\{row\}>                                                                         | Function\( h, \{ row \} \)                                                                      |          |                             |
 | span\-method        | 合并 td 方法,函数返回\[rowspan,colspan\],仅在常规 col 生效,内置的 check 和 expand 列不生效                                                 | Function\( \{ row, rowIndex, col, colIndex \} \)                                                |          |                             |
@@ -19,13 +19,16 @@
 | enable\-current\-row    | 是否开启高亮当前行                                                                                                                         | Boolean                                                                                         | True     |
 | row\-style          | 内容区域行样式, 为函数时:<br/> row: 行数据, <br/>rowIndex: row 在 tableData 中的 index,<br/> $rowIndex:tr 在 table 中的 dom index          | Object / Function\( \{ row, rowIndex, $rowIndex \) \}                                           |          |                             |
 | row\-class          | 内容区域的行 class,参数同 row-style                                                                                                        | Object / String / Array\<String\> / Function\( \{ row, rowIndex,\$rowIndex \} \)                |          |                             |
-| cell\-style         | 内容区 cell 单元格样式,参数:<br/> col:列对象 columnObject,<br/> $colIndex:td 在 tr 中的索引                                                | Object / Function\( \{ row, rowIndex, $rowIndex, col, $colIndex \} \)                           |          |                             |
-| cell\-class         | 内容区 cell 单元格 class,参数同 cell-style                                                                                                 | Object / String / Array\<String\> / Function\( \{ row, rowIndex,$rowIndex, col, $colIndex \} \) |          |                             |
+| cell\-style         | 内容区 单元格样式,参数:<br/> col:列对象 columnObject,<br/> $colIndex:td 在 tr 中的索引                                                | Object / Function\( \{ row, rowIndex, $rowIndex, col, $colIndex \} \)                           |          |                             |
+| cell\-class         | 内容区 单元格 class,参数同 cell-style                                                                                                 | Object / String / Array\<String\> / Function\( \{ row, rowIndex,$rowIndex, col, $colIndex \} \) |          |                             |
 | header\-row\-style  | 表头行样式,参数:<br/>row:当前行所有列对象 Array\<columnObject\>,<br/>\$rowIndex:dom 索引,第几行,                                           | Object / Function\( \{ row, \$rowIndex \} \)                                                    |          |                             |
 | header\-row\-class  | 表头行 class,参数同 header-row-style                                                                                                       | Object / String / Array\<String\> / Function\( \{ row<columnObject>, $rowIndex \} \)            |          |                             |
-| header\-cell\-style | 表头 cell 单元格样式,参数:<br/> row:Array\<columnObject\>,<br/>$rowIndex:第几行,<br/>col:列对象,<br/>$colIndex:列 dom 索引,第几列          | Object / Function\( \{ row, $rowIndex , col, $colIndex \} \)                                    |          |                             |
-| header\-cell\-class | 表头 cell 单元格 class,同 header-cell-style                                                                                                | Object / String / Array<String> / Function\( \{ row, $rowIndex, col, $colIndex \} \)            |          |                             |
-
+| header\-cell\-style | 表头单元格样式,参数:<br/> row:Array\<columnObject\>,<br/>$rowIndex:第几行,<br/>col:列对象,<br/>$colIndex:列 dom 索引,第几列          | Object / Function\( \{ row, $rowIndex , col, $colIndex \} \)                                    |          |                             |
+| header\-cell\-class | 表头单元格 class,同 header-cell-style                                                                                                | Object / String / Array<String> / Function\( \{ row, $rowIndex, col, $colIndex \} \)            |          |                             |
+| footer-cell-style   | 表尾区单元格 样式, 参数同 row-style, rowIndex 为 footerData, | Object / Function\( \{ row, rowIndex, $rowIndex \) \} | | |
+| footer-cell-class   | 表尾区单元格 class, 同 cell-class  | Object / String / Array\<String\> / Function\( \{ row, rowIndex,$rowIndex, col, $colIndex \} \) |          |                             |
+| footer-row-style    | 同row-style
+| footer-row-class    | 同row-class
 ### table event
 
 | 事件名               | 说明                                                                                                                                     | 参数                                                     |
@@ -107,7 +110,13 @@
     //可覆盖全局的headerCellClass
     headerCellClass: ({row, $rowIndex, col, $colIndex}) => {
         return {'header-cell-class': true}
-    }
+    },
+    footerCellStyle:{
+        fontSize:'20px'
+    },
+    footerCellClass:{
+        'class-1':true
+    }   
 }
 ```
 

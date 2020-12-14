@@ -45,7 +45,7 @@ export function resolveStyle(style, ...args) {
     if (type === _Object) {
         s = style
     } else if (type === _Function) {
-        s = style.call(null, args);
+        s = style.apply(null, args);
         if (_toString.call(s) !== _Object) {
             throw new Error('style func must return an object');
         }
@@ -62,7 +62,7 @@ export function resolveClass(clazz, ...args) {
     if (type === _Object) {
         c = clazz
     } else if (type === _Function) {
-        c = clazz.call(null, args)
+        c = clazz.apply(null, args)
         if (_toString.call(c) === _Function) {
             throw new Error('invalid value class func returned');
         } else {

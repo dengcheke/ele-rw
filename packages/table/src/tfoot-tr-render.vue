@@ -22,76 +22,51 @@ export default {
             return cellContent
         },
         getCellStyle(colNode, args) {
-            let _cellStyle = {};
-            if (this.table.footerCellStyle) {
-                _cellStyle = resolveStyle(this.table.footerCellStyle, args);
+            return {
+                textAlign: colNode.footerAlign || this.table.align,
+                ...resolveStyle(this.table.footerCellStyle, args),
+                ...resolveStyle(colNode.col.footerCellStyle, args)
             }
-            if (colNode.col.footerCellStyle) {
-                _cellStyle = {
-                    ..._cellStyle,
-                    ...resolveStyle(colNode.col.footerCellStyle, args)
-                }
-            }
-            colNode.align && (_cellStyle.alignItems = colNode.footerAlign);
-            return _cellStyle
         },
         getCellClass(colNode, args) {
-            let _cellClass = {}
-            if (this.table.footerCellClass) {
-                _cellClass = resolveClass(this.table.footerCellClass, args);
+            return {
+                ...resolveClass(this.table.footerCellClass, args),
+                ...resolveClass(colNode.col.footerCellClass, args)
             }
-            if (colNode.col.footerCellClass) {
-                _cellClass = {
-                    ..._cellClass,
-                    ...resolveClass(colNode.col.footerCellClass, args)
-                }
-            }
-            _cellClass.cell = true;
-            return _cellClass;
         },
         getTrClass() {
-            const {footerRowClass} = this.table,
-                args = {row: this.row, rowIndex: this.index, $rowIndex: this.domIndex};
-            let trClass = {
+            const args = {row: this.row, rowIndex: this.index, $rowIndex: this.domIndex};
+            return {
+                ...resolveClass(this.table.footerRowClass, args),
                 'row': true,
                 'row--footer': true
-            };
-            if (footerRowClass) {
-                trClass = {
-                    ...trClass,
-                    ...resolveClass(footerRowClass, args)
-                };
             }
-            return trClass
         },
         getTrStyle() {
-            const {footerRowStyle} = this.table,
-                args = {row: this.row, rowIndex: this.index, $rowIndex:this.domIndex};
-            let trStyle = {};
-            if (footerRowStyle) {
-                trStyle = resolveStyle(footerRowStyle, args);
-            }
-            return trStyle;
+            const args = {row: this.row, rowIndex: this.index, $rowIndex: this.domIndex};
+            return resolveStyle(this.table.footerRowStyle, args);
         },
     },
     render: function (h) {
         const columns = this.leafColumns, {footerSpanMethod} = this.table,
             fixed = this.fixed, index = this.index,
             domIndex = this.domIndex, row = this.row;
-        let trContent = columns.map((colNode, colIndex) => {
-            let tdAttr = {
+        const trContent = columns.map((colNode, colIndex) => {
+            const args = {row: row, rowIndex: index, $rowIndex: domIndex, col: colNode.col, $colIndex: colIndex};
+            const tdAttr = {
                 class: {
                     'is-hidden': colNode.fixed !== fixed,
                     'no-right-border': colNode._noRightBorder,
-                    'no-shadow-right': colNode._noShadowRightBorder
+                    'no-shadow-right': colNode._noShadowRightBorder,
+                    ...this.getCellClass(colNode, args)
                 },
+                style: this.getCellStyle(colNode, args),
                 attrs: {
                     'data-col-uid': colNode._uid
                 },
                 key: colNode.key
             };
-            const col = colNode.col;
-            const args = {row: row, rowIndex: index, $rowIndex: domIndex, col: col, $colIndex: colIndex};
+
             //span method
             if (footerSpanMethod) {
                 const res = footerSpanMethod(args)
@@ -104,10 +79,7 @@ export default {
             //cell content
             const cellContent = this.getCellContent(h, colNode, args);
             return <td {...tdAttr}>
-                <div {...{
-                    style: this.getCellStyle(colNode, args),
-                    class: this.getCellClass(colNode, args)
-                }}>{cellContent}</div>
+                <div class="cell cell--footer">{cellContent}</div>
             </td>
         }).filter(Boolean);
         const trAttr = {

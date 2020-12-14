@@ -2,17 +2,15 @@
 
 .ele-rw-table {
   width: 100%;
-  color:white;
+  color: white;
   position: relative;
 
   .inner-wrapper {
     position: relative;
 
-    &:hover {
-      .scrollbar__bar {
-        opacity: 1;
-        transition: opacity 340ms ease-out;
-      }
+    &:hover > .scrollbar__bar {
+      opacity: 1;
+      transition: opacity 340ms ease-out;
     }
   }
 
@@ -32,6 +30,7 @@
 
   .table__body {
     color: white;
+
     tr.row {
       transition: 0.1s background-color;
       background-color: #002534;

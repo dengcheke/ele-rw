@@ -1,10 +1,9 @@
-{
+module.exports = {
     "presets": [
         [
             "@babel/preset-env",
             {
-                "modules": false,
-                "targets": "last 2 versions"
+                "modules": "commonjs",
             }
         ]
     ],
@@ -19,13 +18,6 @@
                     {
                         "loose": true,
                         "modules": "commonjs",
-                        "targets": {
-                            "browsers": [
-                                "> 1%",
-                                "last 2 versions",
-                                "not ie <= 8"
-                            ]
-                        }
                     }
                 ]
             ]

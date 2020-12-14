@@ -12,7 +12,7 @@ module.exports = {
         publicPath: '/',
     },
     resolve: {
-        extensions: ['.js', '.vue', '.json','.jsx'],
+        extensions: ['.js', '.vue', '.json', '.jsx'],
         alias: {
             '@src': path.resolve(__dirname, './src'),
             '@lib': path.resolve(__dirname, './lib'),
@@ -23,11 +23,6 @@ module.exports = {
     module: {
         rules: [
             {
-                test: /\.m?jsx?$/,
-                exclude: [/lib/, /node_modules/],
-                loader: 'babel-loader',
-            },
-            {
                 test: /\.vue$/,
                 loader: 'vue-loader',
                 options: {
@@ -35,6 +30,14 @@ module.exports = {
                         preserveWhitespace: false
                     }
                 }
+            },
+            {
+                test: /\.m?jsx?$/,
+                include: [
+                    path.resolve(__dirname, 'node_modules/highlight.js/lib'),
+                    path.resolve(__dirname, 'packages')
+                ],
+                loader: 'babel-loader',
             },
             {
                 test: /\.css$/,
@@ -55,6 +58,26 @@ module.exports = {
                 }],
             }
         ]
+    },
+    optimization:{
+        splitChunks:{
+            chunks: "all",
+            cacheGroups:{
+                hljs:{
+                    name: 'hljs',
+                    minChunks: 1,
+                    test: function (module) {
+                        if (module.resource) {
+                            const path = module.resource;
+                            return /[\\/]node_modules[\\/]highlight\.js[\\/]/.test(path)
+                        } else {
+                            return false;
+                        }
+                    },
+                    priority: 3,
+                }
+            }
+        }
     },
     devServer: {
         port: 8888,
