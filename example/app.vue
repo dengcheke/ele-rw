@@ -30,7 +30,8 @@ export default {
                 {label: '单元格样式', comp: '5'},
                 {label: '固定列', comp: '6'},
                 {label: '多级表头',comp:'7'},
-                {label: '勾选和展开',comp:'8'}
+                {label: '自定义渲染',comp:'8'},
+                {label: '勾选和展开',comp:'9'},
             ]
         }
     },

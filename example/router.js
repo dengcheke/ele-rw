@@ -7,8 +7,8 @@ import tableStyleBorder from './components/table/_4_style-border';
 import tableStyleRowCell from './components/table/_5_style-row-cell';
 import tableFixedCol from './components/table/_6_fix-col';
 import tableMultiHeader from './components/table/_7_multi-header';
-import tableCheckAndExpand from './components/table/_8_check-and-expand'
-
+import tableRender from './components/table/_8_render'
+import tableCheckAndExpand from './components/table/_9_check-and-expand';
 Vue.use(VueRouter)
 const tableRoutes = [
     {path: '/table/1', component: tableBase},
@@ -18,7 +18,8 @@ const tableRoutes = [
     {path: '/table/5', component: tableStyleRowCell},
     {path: '/table/6', component: tableFixedCol},
     {path: '/table/7', component: tableMultiHeader},
-    {path: "/table/8", component: tableCheckAndExpand},
+    {path: "/table/8", component: tableRender},
+    {path: "/table/9", component: tableCheckAndExpand},
     {path: '*', redirect: '/table/1'}
 ]
 const router = new VueRouter({

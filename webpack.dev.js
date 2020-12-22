@@ -35,7 +35,8 @@ module.exports = {
                 test: /\.m?jsx?$/,
                 include: [
                     path.resolve(__dirname, 'node_modules/highlight.js/lib'),
-                    path.resolve(__dirname, 'packages')
+                    path.resolve(__dirname, 'packages'),
+                    path.resolve(__dirname, 'example/components')
                 ],
                 loader: 'babel-loader',
             },
