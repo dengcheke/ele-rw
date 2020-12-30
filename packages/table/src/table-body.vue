@@ -69,6 +69,14 @@ export default {
             }
             return vnode;
         });
+        let $append = this.table.$scopedSlots.append;
+        if ($append) {
+            trs.push(<tr class="append-row">
+                <td class="append-cell" colSpan={columns.length}>
+                    {$append() || null}
+                </td>
+            </tr>);
+        }
         const tableAttr = {
             class: ['table__body'],
             style: {
@@ -105,10 +113,10 @@ export default {
                 const elms = this.$el.querySelectorAll('tr.row');
                 const expands = this.store.expandedSet;
                 this.renderList.forEach((row, idx) => {
-                    if(idx <= 0) return;
+                    if (idx <= 0) return;
                     row[0] === 'expand' && expands.has(row[1])
-                        ? addClass(elms[idx-1], 'is-expanded')
-                        : removeClass(elms[idx-1], 'is-expanded')
+                        ? addClass(elms[idx - 1], 'is-expanded')
+                        : removeClass(elms[idx - 1], 'is-expanded')
                 })
             })
         },

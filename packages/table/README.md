@@ -18,6 +18,8 @@
 | span\-method        | 合并 td 方法,函数返回\[rowspan,colspan\],仅在常规 col 生效,内置的 check 和 expand 列不生效                                                 | Function\( \{ row, rowIndex, col, colIndex \} \)                                                |          |                             |
 | resizable           | 是否开启列拖拽                                                                                                                             | Boolean                                                                                         | false    |
 | enable\-current\-row    | 是否开启高亮当前行                                                                                                                         | Boolean                                                                                         | True     |
+| show-header | 是否显示表头| Boolean | true |
+| reset-scroll-on-data-change | 当tableData发生变化时（Array变化生效例如data = [...data],Array不变的如Array.push(xxx)等不生效 ）,是否重置滚动到左上角 |Boolean | true |  
 | row\-style          | 内容区域行样式, 为函数时:<br/> row: 行数据, <br/>rowIndex: row 在 tableData 中的 index,<br/> $rowIndex:tr 在 table 中的 dom index          | Object / Function\( \{ row, rowIndex, $rowIndex \) \}                                           |          |                             |
 | row\-class          | 内容区域的行 class,参数同 row-style                                                                                                        | Object / String / Array\<String\> / Function\( \{ row, rowIndex,\$rowIndex \} \)                |          |                             |
 | cell\-style         | 内容区 单元格样式,参数:<br/> col:列对象 columnObject,<br/> $colIndex:td 在 tr 中的索引                                                | Object / Function\( \{ row, rowIndex, $rowIndex, col, $colIndex \} \)                           |          |                             |
@@ -138,3 +140,10 @@
 | render       | cell 渲染函数，指定 render 时，type 将失效，内容完全由客户端指定                                                                                                              | Function\(h, \{row, rowIndex,$rowIndex, col, $colIndex \}\) |          |                             |
 | renderFooter | footerCell 渲染函数  | Function\(h, \{row, rowIndex,$rowIndex, col, $colIndex \}\) |          |                             |
 | renderHeader | headerCell 的渲染函数，指定该选项时，内置的 sort，check，expand 图标将失效，由客户端自己调用 table 方法实现，                                                                 | Function\(h, \{row, $rowIndex, col, $colIndex \}\)          |          |                             |
+
+#### slot
+
+| 参数名       | 说明       | 参数 |
+| ------------ | -----------| ----------|
+| expand       | 行的展开内容  | {row ,rowIndex, $rowIndex} |
+| append        | 追加到body最后一行，footer之前 的内容 | |

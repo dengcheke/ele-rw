@@ -72,6 +72,7 @@ import TableFooter from './table-footer';
 import ResizeObserver from 'resize-observer-polyfill';
 import Bar from '../../bar';
 import {animationScrollValue, getTableId} from "./utils";
+
 export default {
     name: "EleRwTable",
     directives: {
@@ -147,10 +148,18 @@ export default {
             type: Boolean,
             default: true
         },
-        showHeader:{
-            type:Boolean,
-            default:true
+        showHeader: {
+            type: Boolean,
+            default: true
         },
+        resetScrollOnDataChange: {
+            // 数据变化时,是否将滚动重置到左上角,
+            // 改变data才会触发，tabeleData = [...tableData] 会触发，
+            // tableData.push(xxx) 不会触发
+            type: Boolean,
+            default: true
+        },
+
         //style
         rowStyle: {
             type: Object | Function,
@@ -201,6 +210,7 @@ export default {
             default: null,
         },
 
+        //test
         enableHighlightCol: {
             type: Boolean,
             default: false,
@@ -458,12 +468,22 @@ export default {
         mouseLeaveTable() {
             this.store.hover$Idx = this.store.hoverRow = null;
         },
-
-
+        //重置滚动位置
+        resetScroll() {
+            this.$nextTick(() => {
+                const {bodyWrap, bodyWrapLeft, bodyWrapRight} = this.$refs;
+                [bodyWrap, bodyWrapLeft, bodyWrapRight].forEach(wrap => {
+                    if (wrap) {
+                        wrap.scrollTop = wrap.scrollLeft = 0;
+                    }
+                })
+            })
+        },
         /*代理子组件事件*/
         dispatchEvent(topic, ...args) {
             this.$emit(topic, ...args);
         },
+
 
         //获得一个row的key值
         getRowKey(row) {
@@ -480,17 +500,19 @@ export default {
             return this.store.flatDfsData.find(i => {
                 if (!row) return false;
                 if (typeof row === 'object') {
-                    if(i === row){
+                    if (i === row) {
                         return true
-                    }else{
-                        let a = this.getRowKey(i),b = this.getRowKey(row);
-                        return a && b && a===b;
+                    } else {
+                        let a = this.getRowKey(i), b = this.getRowKey(row);
+                        return a && b && a === b;
                     }
                 } else { //默认row是id值
                     return this.getRowKey(i) === row;
                 }
             })
         },
+
+
 
         //设置当前行,不传则取消当前行
         setCurrentRow(row) {
@@ -710,6 +732,7 @@ export default {
         getSortColumnNodes() {
             return this.store.sortColumns;
         },
+
     },
     watch: {
         scrollTop: function () {
@@ -752,14 +775,7 @@ export default {
         tableData: {
             handler: function (newly, older) {
                 //重新赋值,滚动到左上角
-                newly !== older && this.$nextTick(() => {
-                    const {bodyWrap, bodyWrapLeft, bodyWrapRight} = this.$refs;
-                    [bodyWrap, bodyWrapLeft, bodyWrapRight].forEach(wrap => {
-                        if (wrap) {
-                            wrap.scrollTop = wrap.scrollLeft = 0;
-                        }
-                    })
-                });
+                newly !== older && this.resetScrollOnDataChange && this.resetScroll();
                 this.store.handleTableDataChange();
             },
             immediate: true

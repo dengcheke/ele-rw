@@ -33,6 +33,7 @@ export default {
                 {label: '自定义渲染',comp:'8'},
                 {label: '勾选和展开',comp:'9'},
                 {label: '树形展开',comp:'10'},
+                {label: '追加行',comp:'11'},
             ]
         }
     },
