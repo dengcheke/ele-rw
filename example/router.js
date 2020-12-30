@@ -9,6 +9,7 @@ import tableFixedCol from './components/table/_6_fix-col';
 import tableMultiHeader from './components/table/_7_multi-header';
 import tableRender from './components/table/_8_render'
 import tableCheckAndExpand from './components/table/_9_check-and-expand';
+import tableTreeExpand from './components/table/_10_tree-expand';
 Vue.use(VueRouter)
 const tableRoutes = [
     {path: '/table/1', component: tableBase},
@@ -20,6 +21,7 @@ const tableRoutes = [
     {path: '/table/7', component: tableMultiHeader},
     {path: "/table/8", component: tableRender},
     {path: "/table/9", component: tableCheckAndExpand},
+    {path: "/table/10", component: tableTreeExpand},
     {path: '*', redirect: '/table/1'}
 ]
 const router = new VueRouter({

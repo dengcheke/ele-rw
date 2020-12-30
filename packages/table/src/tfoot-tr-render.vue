@@ -78,7 +78,6 @@ export default {
             }
             //cell content
             const cellContent = this.getCellContent(h, colNode, args);
-            debugger
             return <td {...tdAttr}>
                 <div class="cell cell--footer">{cellContent}</div>
             </td>

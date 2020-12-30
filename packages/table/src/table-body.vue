@@ -155,7 +155,6 @@ export default {
         // renderList更新后 即使state未变，但行索引可能变化
         'store.renderListTrigger': {
             handler: function () {
-                console.log('renderList change')
                 this.updateTreeExpandClass();
                 this.updateCheckClass();
                 this.updateExpandClass();
