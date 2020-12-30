@@ -1,7 +1,10 @@
 import Vue from 'vue'
 import hljs from 'highlight.js'
-import 'highlight.js/styles/androidstudio.css';
+import 'highlight.js/styles/darcula.css';
 Vue.use(hljs.vuePlugin);
+import App from './app';
+import router from './router'
+
 
 import EleRwTable from '../packages/table/index';
 Vue.use(EleRwTable);
@@ -11,8 +14,10 @@ Vue.component('code-panel',CodePanel);
 
 import Scrollbar from '../packages/custom-scrollbar';
 Vue.component('scroll-bar',Scrollbar)
-import App from './app';
-import router from './router'
+
+import Dialog from '../packages/dialog';
+Vue.use(Dialog);
+
 new Vue({
     el:'#app',
     router,

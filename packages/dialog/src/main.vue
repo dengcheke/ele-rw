@@ -1,21 +1,3 @@
-<!--
-<template>
-    <transition name="fade-out">
-        <div class="custom-dialog base-comp" v-show="show">
-            <div class="dialog__title" ref="title" style="cursor:move;">
-                <slot name="title"></slot>
-            </div>
-            <div class="dialog__content">
-                <slot></slot>
-            </div>
-            <div class="dialog__footer">
-                <slot name="footer"></slot>
-            </div>
-        </div>
-    </transition>
-</template>
--->
-
 <script type="text/jsx">
 import {rafThrottle} from "@src/utils/index";
 import {off, on} from "@src/utils/dom";
@@ -23,7 +5,6 @@ import {TransferDom} from "@src/directives/v-transfer-dom";
 
 const minZIndex = 1000; //最小的zIndex
 let zIndex = minZIndex; //当前的zIndex
-let gId = 1;//全局id
 const winShowCache = []; //当前显示的所有dialog集合
 
 function removeFromCache(dialog) {
@@ -43,11 +24,21 @@ on(document.body, 'keyup', (e) => {
         }
         top && top.$emit('update:show', false);
     }
-})
+});
+let gId = 1;//全局id
+const template = {
+    width: null,
+    height: null,
+    left: null,
+    right: null,
+    top: null,
+    bottom: null,
+    position: null
+};
 export default {
     name: "EleRwDialog",
     directives: {
-        'transfer-dom': TransferDom
+        'transfer-dom': TransferDom,
     },
     props: {
         classList: {
@@ -57,18 +48,23 @@ export default {
         },
         width: {
             type: Number | String,
-            default: null,
+            default: 600,
             desc: '宽度'
+        },
+        height: {
+            type: Number | String,
+            default: null,
+            desc: '高度'
         },
         padding: {
             type: Array,
             default: () => [0, 0, 0, 0],
             desc: 'dialog距离父元素的边距,限制拖拽范围,上右下左'
         },
-        keepPosition:{
-            type:Boolean,
-            default:false,
-            desc:'是否保持拖拽位置，否则每次重新显示，都会出现在正中间'
+        keepPosition: {
+            type: Boolean,
+            default: false,
+            desc: '是否保持拖拽位置，否则每次重新显示，都会出现在正中间'
         },
         draggable: {
             type: Boolean,
@@ -104,140 +100,75 @@ export default {
     data() {
         return {
             id: gId++,
-            firstLoad: false,//是否已加载过
+            store: {...template},
+            needRestore: false,
         }
     },
     computed: {
         parentNode() {
             return this.appendToBody ? document.body : null;
         },
-        dialogWidth() {
-            const w = this.width;
-            const type = typeof w;
-            if (type === 'number') {
-                return `${w}px`;
-            } else {
-                return w;
-            }
-        }
+
     },
-    render() {
-        const key = `_custom_dialog_${this.id}_`;
+    render(h) {
+        const key = `_ele-rw-dialog-${this.id}_`;
         //第一次可见才加载
-        if (!this.firstLoad && !this.show) {
-            //站位元素
-            return <div class="dialog-placeholder" key={key}/>;
-        } else {
-            !this.firstLoad && (this.firstLoad = true);
-            const clazz = (this.classList || []).reduce((pre, cur) => {
-                pre[cur] = true;
-                return pre;
-            }, {});
-            return (<div class="dialog-placeholder" key={key}>
-                <transition name="fade-out">
-                    <div {...{
-                        class: {
-                            'full-screen': this.fullScreen,
-                            'has-shadow': this.shadow,
-                            'ele-rw-dialog__wrapper': true,
-                            ...clazz
-                        },
-                        directives: [
-                            {
-                                name: 'transfer-dom',
-                                value: this.parentNode,//为null,代表不移动
-                            },
-                            {
-                                name: 'show',
-                                value: this.show
-                            }
-                        ],
-                        ref: "dialogWrapper"
-                    }}>
-                        <div class="ele-rw-dialog" ref="dialog" style={{width: this.dialogWidth}}>
-                            <div class="dialog__title" ref="title" style={{cursor: this.draggable ? 'move' : 'auto'}}>
-                                {this.$slots.title}
-                            </div>
-                            <div class="dialog__content">
-                                {this.$slots.default}
-                            </div>
-                            <div class="dialog__footer">
-                                {this.$slots.footer}
-                            </div>
-                        </div>
+        const clazz = (this.classList || []).reduce((pre, cur) => {
+            pre[cur] = true;
+            return pre;
+        }, {});
+        return <transition name="ele-rw-dialog-fade-out">
+            <div {...{
+                key: key,
+                class: {
+                    'ele-rw-dialog__wrapper': true,
+                    'full-screen': this.fullScreen,
+                    'has-shadow': this.shadow,
+                    'append-to-body': this.appendToBody
+                },
+                directives: [
+                    {
+                        name: 'transfer-dom',
+                        value: this.parentNode,//为null,代表不移动
+                    },
+                    {
+                        name: 'show',
+                        value: this.show
+                    }
+                ],
+                ref: "dialogWrapper"
+            }}>
+                <div {...{
+                    class: {
+                        ...clazz,
+                        'ele-rw-dialog': true,
+                        'full-screen': this.fullScreen,
+                    },
+                    style: {
+                        width: this.parsePx(this.width),
+                        height: this.parsePx(this.height)
+                    },
+                    on: {
+                        mousedown: this.promoteDialogZIndex
+                    },
+                    ref: 'dialog'
+                }}>
+                    <div class="dialog__title" ref="title" style={{cursor: this.draggable ? 'move' : 'auto'}}>
+                        {this.$scopedSlots.title ? this.$scopedSlots.title() : (this.$slots.title || null)}
                     </div>
-                </transition>
-            </div>)
-        }
-    },
-    created() {
-        //加载后,绑定事件
-        let un = this.$watch('firstLoad', (v) => {
-            if (!v) return;
-            un();
-            un = null;
-            this.$nextTick(() => {
-                this.init();
-            });
-        });
-        this.$once("hook:beforeDestroy", () => {
-            un && un();
-        });
+                    <div class="dialog__content">
+                        {this.$scopedSlots.default ? this.$scopedSlots.default() : (this.$slots.default || null)}
+                    </div>
+                    <div class="dialog__footer">
+                        {this.$scopedSlots.footer ? this.$scopedSlots.footer() : (this.$slots.footer || null)}
+                    </div>
+                </div>
+            </div>
+        </transition>
     },
     methods: {
-        init() {
-            const wrapper = this.$refs.dialogWrapper;
-            const dialog = this.$refs.dialog;
-            this.draggable && this.initDrag();//初始化一次拖拽
-            const unAppendToBody = this.$watch('appendToBody', (v) => {
-                //drag需要考虑父节点, 切换appendToBody会改变父节点, 需要重新绑定drag
-                if (this._unBindDrag) {
-                    this._clearDrag();
-                    this.draggable && this.initDrag();
-                }
-                //定位是相对于的父节点，切换时可能导致不可见,强制到中间
-                requestAnimationFrame(() => {
-                    const parentNode = dialog.parentNode;
-                    dialog.style.left = `${(parentNode.clientWidth - dialog.offsetWidth) / 2}px`;
-                    dialog.style.top = `${(parentNode.clientHeight - dialog.offsetHeight) / 2}px`;
-                });
-            });
-            const unDragWatch = this.$watch('draggable', (v) => {
-                this._clearDrag();
-                v && this.initDrag();
-            });
-            const unWatch = this.$watch('show', (v) => {
-                if (v) { //送入缓存
-                    winShowCache.push(this);
-                    this.promoteDialogZIndex();
-                    if (!this.fullScreen) {
-                        !this.keepPosition && requestAnimationFrame(() => {
-                            const parentNode = dialog.parentNode;
-                            dialog.style.left = `${(parentNode.clientWidth - dialog.offsetWidth) / 2}px`;
-                            dialog.style.top = `${(parentNode.clientHeight - dialog.offsetHeight) / 2}px`;
-                        });
-                    }
-                } else { //隐藏，从缓存中移除
-                    wrapper.style.zIndex = '1000';
-                    removeFromCache(this);
-                }
-            }, {immediate: true});
-            const unFullScreen = this.$watch('fullScreen', (v) => {
-                v ? dialog.classList.add('full-screen') : dialog.classList.remove('full-screen');
-            }, {immediate: true});
-            on(dialog, 'mousedown', this.promoteDialogZIndex);//点击窗口会提升zindex
-            this.$once('hook:beforeDestroy', () => {
-                unWatch && unWatch();
-                unFullScreen && unFullScreen();
-                unDragWatch && unDragWatch();
-                unAppendToBody && unAppendToBody();
-                off(dialog, 'mousedown', this.promoteDialogZIndex);
-                this._unBindDrag && this._unBindDrag();
-                removeFromCache(this);
-            });
-        },
         // 新显示的dialog，z-index提升到最上层
-        // full-screen 和 带shadow的 除外, 不然其他会被遮挡，永远点不到
+        // full-screen 和 带 shadow 的 除外,
         promoteDialogZIndex() {
             const wrapper = this.$refs.dialogWrapper;
             if (winShowCache.length > 1) {
@@ -245,23 +176,19 @@ export default {
                 zIndex += 1;
                 wrapper.style.zIndex = zIndex; //点击的窗口提到最上层
             } else {
-                zIndex = 1000;
+                zIndex = minZIndex;
             }
         },
-        _clearDrag() {
+        clearDrag() {
             if (this._unBindDrag) {
                 this._unBindDrag();
                 this._unBindDrag = null;
             }
         },
-        //初始化拖拽
         initDrag() {
             const dialog = this.$refs.dialog,
-                wrap = dialog ? dialog.parentNode : null,
+                wrap = dialog.parentNode,
                 title = this.$refs.title;
-            if (!wrap || !dialog || !title) return;
-            //容器的定位盒子,判断是否超出边界
-
             const titleOnMousedown = (e) => {
                 //take snapshot
                 document.body.style.userSelect = 'none';
@@ -299,11 +226,11 @@ export default {
                     } else if (_top + h > H + Top - b) {
                         _top = H + Top - h - b - 1;
                     }
-                    _left = _left - Left;//boundingRect是相对于body的，style为相对于父元素,
+                    _left = _left - Left;//boundingRect是相对于body的，这里计算相对wrap父元素的
                     _top = _top - Top;
                     // 移动当前元素
-                    dialog.style.left = `${_left}px`;
-                    dialog.style.top = `${_top}px`;
+                    dialog.style.left = `${_left >= 0 ? _left : 0}px`;
+                    dialog.style.top = `${_top >= 0 ? _top : 0}px`;
                 });
                 const onMouseup = function () {
                     off(document, 'mousemove', onMousemove);
@@ -317,34 +244,124 @@ export default {
             on(title, 'mousedown', titleOnMousedown);
             this._unBindDrag = () => {
                 off(title, 'mousedown', titleOnMousedown);
-            };
+            }
+        },
+        placeAtCenter() {
+            this.$nextTick(() => {
+                const dialog = this.$refs.dialog;
+                const parentNode = dialog.parentNode;
+                const left = parentNode.clientWidth - dialog.offsetWidth;
+                const top = parentNode.clientHeight - dialog.offsetHeight;
+                dialog.style.left = `${(left > 0 ? left : 0) / 2}px`;
+                dialog.style.top = `${(top > 0 ? top : 0) / 2}px`;
+            })
+        },
+        parsePx(w) {
+            const type = typeof w;
+            if (type === 'number') {
+                return `${w}px`;
+            } else {
+                return w;
+            }
+        },
+        checkNestedPosition() {
+            requestAnimationFrame(() => {
+                const dialog = this.$refs.dialog;
+                const wrap = dialog.parentNode;
+                if (dialog.offsetLeft > wrap.clientWidth) {
+                    const left = wrap.clientWidth - dialog.offsetWidth;
+                    dialog.style.left = left > 0 ? left + 'px' : 0;
+                }
+                if (dialog.offsetTop > wrap.clientHeight) {
+                    const top = wrap.clientHeight - dialog.offsetTop;
+                    dialog.style.top = top > 0 ? top + 'px' : 0;
+                }
+            })
         }
     },
+    watch: {
+        appendToBody: function () {
+            this.placeAtCenter();
+        },
+        draggable: {
+            handler: function (v) {
+                this.$nextTick(() => {
+                    if (v) {
+                        this.initDrag();
+                    } else {
+                        this.clearDrag();
+                    }
+                })
+            },
+            immediate: true
+        },
+        show: {
+            handler: function (v) {
+                this.$nextTick(() => {
+                    const wrapper = this.$refs.dialogWrapper;
+                    if (v) {
+                        winShowCache.push(this);
+                        this.promoteDialogZIndex();
+                        if (!this.fullScreen) {
+                            !this.keepPosition && this.placeAtCenter();
+                        }
+                    } else { //隐藏，从缓存中移除
+                        wrapper.style.zIndex = '1000';
+                        removeFromCache(this);
+                    }
+                });
+            },
+            immediate: true
+        },
+        fullScreen: {
+            handler: function (v) {
+                winShowCache.forEach(i => {
+                    if (i !== this) {
+                        i.checkNestedPosition();
+                    }
+                });
+                this.$nextTick(() => {
+                    const dialog = this.$refs.dialog;
+                    const style = dialog.style;
+                    if (v) {
+                        const {left, right, top, bottom, width, height, position} = style || {};
+                        this.store = {left, right, top, bottom, width, height, position};
+                        this.needRestore = true;
+                        style.left = style.right = style.top = style.bottom = 0;
+                        style.position = "fixed";
+                        style.width = style.height = '100%';
+                    } else {
+                        if (!this.needRestore) return;
+                        Object.keys(this.store).forEach(attr => {
+                            style[attr] = this.store[attr];
+                        })
+                        this.store = {...template};
+                        this.needRestore = false;
+                    }
+                })
+            },
+            immediate: true
+        }
+    },
+    beforeDestroy() {
+        this.clearDrag();
+        removeFromCache(this);
+    }
 }
 </script>
 <style lang="less">
 .ele-rw-dialog__wrapper {
-    position: absolute;
     z-index: 1000;
+    pointer-events: none;
+    position: absolute;
     left: 0;
     top: 0;
     right: 0;
     bottom: 0;
-    pointer-events: none;
 
     &.has-shadow {
         background-color: rgba(0, 0, 0, .4);
         pointer-events: auto;
-    }
-
-    &.full-screen > .ele-rw-dialog {
-        position: fixed;
-        left: 0 !important;
-        top: 0 !important;
-        bottom: 0 !important;
-        right: 0 !important;
-        width: auto !important;
-        height: auto !important;
     }
 
     .ele-rw-dialog {
@@ -359,17 +376,22 @@ export default {
     .dialog__title {
         position: relative;
         user-select: none;
-
-        i.el-icon-close {
-            position: absolute;
-            right: 0;
-            top: 0;
-            width: 24px;
-            height: 24px;
-            font-size: 24px;
-            color: white;
-        }
+        overflow: hidden;
     }
 }
 
+.ele-rw-dialog-fade-out-enter,
+.ele-rw-dialog-fade-out-leave-to {
+    opacity: 0;
+}
+
+.ele-rw-dialog-fade-out-enter-active,
+.ele-rw-dialog-fade-out-leave-active {
+    transition: opacity 0.3s;
+}
+
+.ele-rw-dialog-fade-out-enter-to,
+.ele-rw-dialog-fade-out-leave {
+    opacity: 1;
+}
 </style>

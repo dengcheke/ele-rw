@@ -2,9 +2,12 @@
     <div class="app">
         <aside>
             <scroll-bar :view-style="{paddingRight:'15px',paddingBottom:'15px'}">
-                <div v-for="item in list" @click="goto(item)" class="item"
-                     :class="{'is-current':item.comp===curComp}">
-                    {{ item.label }}
+                <div v-for="group in groups">
+                    <div>{{ group.label }}</div>
+                    <div v-for="item in group.children" @click="goto(item)" class="item"
+                         :class="{'is-current':item.pathName===curComp}">
+                        {{ item.label }}
+                    </div>
                 </div>
             </scroll-bar>
         </aside>
@@ -21,34 +24,46 @@ export default {
     name: "app",
     data() {
         return {
-            curComp:null,
-            list: [
-                {label: '基础', comp: '1'},
-                {label: '列宽固定与适应', comp: '2'},
-                {label: '布局', comp: '3'},
-                {label: '样式与边框', comp: '4'},
-                {label: '单元格样式', comp: '5'},
-                {label: '固定列', comp: '6'},
-                {label: '多级表头',comp:'7'},
-                {label: '自定义渲染',comp:'8'},
-                {label: '勾选和展开',comp:'9'},
-                {label: '树形展开',comp:'10'},
-                {label: '追加行',comp:'11'},
+            curComp: null,
+            groups: [
+                {
+                    label: '表格',
+                    children: [
+                        {label: '基础', pathName: '/table/1'},
+                        {label: '列宽固定与适应', pathName: '/table/2'},
+                        {label: '布局', pathName: '/table/3'},
+                        {label: '样式与边框', pathName: '/table/4'},
+                        {label: '单元格样式', pathName: '/table/5'},
+                        {label: '固定列', pathName: '/table/6'},
+                        {label: '多级表头', pathName: '/table/7'},
+                        {label: '自定义渲染', pathName: '/table/8'},
+                        {label: '勾选和展开', pathName: '/table/9'},
+                        {label: '树形展开', pathName: '/table/10'},
+                        {label: '追加行', pathName: '/table/11'},
+                    ]
+                },
+                {
+                    label:'dialog',
+                    children: [
+                        {label: '基础', pathName: '/dialog/1'},
+                        {label: '嵌套', pathName: '/dialog/2'},
+                    ]
+                }
             ]
         }
     },
-    methods:{
-        goto(item){
-            this.curComp=item.comp;
-            this.$router.push('/table/'+item.comp);
+    methods: {
+        goto(item) {
+            this.curComp = item.pathName;
+            this.$router.push(item.pathName);
         }
     },
-    watch:{
-        $route:{
-            handler:function(to, from){
-                this.curComp = to.path.split(`/`)[2]
+    watch: {
+        $route: {
+            handler: function (to, from) {
+                this.curComp = to.path;
             },
-            immediate:true
+            immediate: true
         }
     }
 }
@@ -69,7 +84,7 @@ aside {
     .item {
         background-color: rgba(0, 0, 0, .1);
         padding: 10px;
-
+        margin-left: 16px;
         &:hover, &.is-current {
             background-color: #00b0e8;
         }
@@ -126,5 +141,8 @@ code {
     padding: 6px 12px;
     background-color: #00b0e8;
     margin-right: 12px;
+    &.active{
+        background-color: #0E9A00;
+    }
 }
 </style>
