@@ -64,7 +64,7 @@
 import {clamp, isDefined, mapping, treeToArray} from "@src/utils/index";
 import {MouseWheel} from "@src/directives/v-mousewheel";
 import {TableEvent} from "./event-name";
-import EmptySlot from '../../empty-slot/main';
+import EmptySlot from '@packages/empty-slot/index';
 import store from './store';
 import TableHeader from './table-header';
 import TableBody from './table-body';

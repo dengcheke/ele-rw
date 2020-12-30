@@ -23,7 +23,7 @@
             <span class="btn" @click="setAllExpand">全展开</span>
         </div>
         <p>通过设置scopeSlot的方式设置展开行内容</p>
-        <ele-rw-table :height="500" ref="table" row-key="name"
+        <ele-rw-table :height="500" ref="table1" row-key="name"
                       :table-data="tableData"
                       :table-cols="tableCols2">
             <template #expand="{row,rowIndex,$rowIndex}">
@@ -37,7 +37,7 @@
             <highlightjs language='javascript' :code="code2"/>
         </code-panel>
         <p>通过设置expandRender的方式设置展开行内容</p>
-        <ele-rw-table :height="500" ref="table" row-key="name"
+        <ele-rw-table :height="500" ref="table2" row-key="name"
                       :expand-render="renderExpand"
                       :table-data="tableData"
                       :table-cols="tableCols2">
@@ -287,15 +287,15 @@ export default {
             this.$refs.table.toggleRowChecked(this.tableData[2]);
         },
         expand1(){
-            this.$refs.table.toggleRowExpanded('王小虎1');
+            this.$refs.table1.toggleRowExpanded('王小虎1');
         },
         expand2(){
-            this.$refs.table.toggleRowExpanded(this.tableData[2]);
+            this.$refs.table1.toggleRowExpanded(this.tableData[2]);
         },
         setAllExpand(){
             this.expandAll = !this.expandAll;
             //必须指定状态
-            this.$refs.table.setAllExpanded(this.expandAll);
+            this.$refs.table1.setAllExpanded(this.expandAll);
         }
     }
 }

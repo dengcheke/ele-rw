@@ -3,7 +3,7 @@ import {mapping} from "@src/utils/index";
 import BodyTrRender from './tbody-tr-render';
 import ExpandTrRender from './expand-tr-render';
 import {addClass, removeClass} from "@src/utils/dom";
-import {walkTreeNode} from "ele-rw-ui/packages/table/src/utils";
+import {walkTreeNode} from "./utils";
 
 export default {
     name: "table-body",
@@ -105,9 +105,10 @@ export default {
                 const elms = this.$el.querySelectorAll('tr.row');
                 const expands = this.store.expandedSet;
                 this.renderList.forEach((row, idx) => {
+                    if(idx <= 0) return;
                     row[0] === 'expand' && expands.has(row[1])
-                        ? addClass(elms[idx], 'is-expanded')
-                        : removeClass(elms[idx], 'is-expanded')
+                        ? addClass(elms[idx-1], 'is-expanded')
+                        : removeClass(elms[idx-1], 'is-expanded')
                 })
             })
         },
@@ -154,6 +155,7 @@ export default {
         // renderList更新后 即使state未变，但行索引可能变化
         'store.renderListTrigger': {
             handler: function () {
+                console.log('renderList change')
                 this.updateTreeExpandClass();
                 this.updateCheckClass();
                 this.updateExpandClass();

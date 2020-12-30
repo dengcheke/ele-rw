@@ -6,8 +6,8 @@ import {
     moveItemNewHasInOld,
     parseWidth,
     walkTreeNode
-} from "ele-rw-ui/packages/table/src/utils";
-import {TableEvent} from "ele-rw-ui/packages/table/src/event-name";
+} from "./utils";
+import {TableEvent} from "./event-name";
 
 export const LEFT = "left", Middle = "middle", RIGHT = "right";
 export const ASC = "asc", DESC = 'desc';

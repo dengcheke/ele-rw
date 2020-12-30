@@ -1,6 +1,6 @@
 <script type="jsx">
 import {mapping} from "@src/utils";
-import {resolveClass, resolveStyle} from "ele-rw-ui/packages/table/src/utils";
+import {resolveClass, resolveStyle} from "./utils";
 
 export default {
     name: "tfoot-tr-render",

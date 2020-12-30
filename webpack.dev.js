@@ -16,6 +16,7 @@ module.exports = {
         alias: {
             '@src': path.resolve(__dirname, './src'),
             '@lib': path.resolve(__dirname, './lib'),
+            '@packages':path.resolve(__dirname,'./packages'),
             'ele-rw-ui': path.resolve(__dirname, './')
         }
     },

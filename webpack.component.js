@@ -45,7 +45,7 @@ module.exports = {
                 test: /\.m?jsx?$/,
                 loader: 'babel-loader',
                 include: process.cwd(),
-                exclude: [/\/node_modules\//,/\/lib\//]
+                exclude: [/\/node_modules\//]
             },
             {
                 test: /\.vue$/,

@@ -1,6 +1,6 @@
 <script type="text/jsx">
 import {mapping, throttle} from "@src/utils/index";
-import {resolveClass, resolveStyle} from "ele-rw-ui/packages/table/src/utils";
+import {resolveClass, resolveStyle} from "./utils";
 import {TableEvent} from "./event-name";
 
 export default {
