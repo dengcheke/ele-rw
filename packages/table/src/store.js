@@ -7,7 +7,7 @@ import {
     parseWidth,
     walkTreeNode
 } from "./utils";
-import {TableEvent} from "./event-name";
+import {TableEvent} from "./table-config";
 
 export const LEFT = "left", Middle = "middle", RIGHT = "right";
 export const ASC = "asc", DESC = 'desc';

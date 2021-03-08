@@ -79,29 +79,6 @@ export function resolveClass(clazz, ...args) {
     return c;
 }
 
-export function mapping(attrName, mapper) {
-    const res = {};
-    Object.keys(mapper).forEach(key => {
-        const value = mapper[key];
-        let fn;
-        if (typeof value === 'string') {
-            fn = function () {
-                return this[attrName] ? this[attrName][value] : null;
-            };
-        } else if (typeof value === 'function') {
-            fn = function () {
-                return value.call(this, this[attrName]);
-            };
-        } else {
-            console.error('invalid value type');
-        }
-        if (fn) {
-            res[key] = fn;
-        }
-    });
-    return res;
-}
-
 
 //****
 export function moveItemNewHasInOld(iter, older, newly) {
@@ -193,9 +170,9 @@ export function animationScrollValue(from, to, rafCb, isDone) {
     if(from===to) throw  new Error('from和to不能相同');
     if(typeof rafCb !== 'function') throw  new Error('rafcb must be function');
     //总值
-    const scrollValue = to - from;
+    const scrollValue = to - from, absSv = Math.abs(scrollValue);
     //总时间
-    const totalTime = getScrollTotalTimes(Math.abs(scrollValue));
+    const totalTime = absSv <= 10 ? 0 : getScrollTotalTimes(absSv);
     let timer;
     const res = {
         from: from,

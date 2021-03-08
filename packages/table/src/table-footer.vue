@@ -1,5 +1,5 @@
 <script type="text/jsx">
-import {mapping} from "@src/utils";
+import {mapping} from "@src/utils/index";
 import TfootTrRender from './tfoot-tr-render'
 export default {
     name: "table-footer",

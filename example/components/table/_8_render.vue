@@ -12,6 +12,8 @@
 </template>
 
 <script type="text/jsx">
+import {TABLE} from "../../../packages/table";
+
 const template = {
     date: "2016-05-1",
     name: '王小虎',
@@ -34,6 +36,7 @@ const code1 = `
                     address: "上海市普陀区金沙江路 1511 弄",
                     zip: 233333
                 }
+                 import {TABLE} from '@packages/table'
                  export default {
                     name: "check-and-expand",
                     data() {
@@ -71,7 +74,12 @@ const code1 = `
                                         return <span style="color:cyan">自定义尾部内容</span>
                                     }
                                 },
-                                {key: 'province', label: '省份', width: 300},
+                                {
+                                    key: 'province', label: '省份', width: 300, sortable:true, type: 'check',
+                                    renderHeader: (h, {row}) => {
+                                        return ['省份',TABLE.$SortCaret,'xxxxx',TABLE.$CheckBox]
+                                    }
+                                },
                                 {key: 'city', label: '区', width: 300},
                                 {key: 'address', label: '地址', width: 250},
                                 {
@@ -136,7 +144,12 @@ export default {
                         return <span style="color:cyan">自定义尾部内容</span>
                     }
                 },
-                {key: 'province', label: '省份', width: 300},
+                {
+                    key: 'province', label: '省份', width: 300, sortable:true, type: 'check',
+                    renderHeader: (h, {row}) => {
+                        return ['省份',TABLE.$SortCaret,'xxxxx',TABLE.$CheckBox]
+                    }
+                },
                 {key: 'city', label: '区', width: 300},
                 {key: 'address', label: '地址', width: 250},
                 {

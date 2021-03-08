@@ -4,6 +4,7 @@ import {isDefined, mapping} from "@src/utils/index";
 import {addClass, off, on, removeClass} from "@src/utils/dom";
 import {objectToStyleString} from "@src/utils";
 import {resolveClass, resolveStyle} from "./utils";
+import {TABLE} from "./table-config";
 
 export default {
     name: "table-header",
@@ -127,7 +128,7 @@ export default {
         },
         getCellStyle(colNode, args) {
             return {
-                textAlign : colNode.headerAlign || this.table.align,
+                textAlign: colNode.headerAlign || this.table.align,
                 ...resolveStyle(this.table.headerCellStyle, args),
                 ...resolveStyle(colNode.col.headerCellStyle, args)
             }
@@ -139,53 +140,68 @@ export default {
             }
         },
         getCellContent(h, colNode, args, hasCheckCol) {
-            let headerRender = [], canSort = true;
+            let contentVnode = [];
             if (colNode.renderHeader && typeof colNode.renderHeader === "function") {
-                headerRender = colNode.renderHeader(h, args);
-                canSort = false;
-            } else if (colNode.type === 'text') {
-                headerRender = [<span>{colNode.label}</span>];
-            } else if (colNode.type === 'check' && colNode.isLeaf) {
-                hasCheckCol.count++;
-                headerRender = [<span {...{
-                    class: ['cell-checkbox'],
-                    on: {
-                        click: this.handleCheck
-                    }
-                }}/>]
+                contentVnode = [].concat(colNode.renderHeader(h, args));
+                const idxSortCaret = contentVnode.findIndex(v => v === TABLE.$SortCaret);
+                if (idxSortCaret >= 0) {
+                    if (!colNode.sortable) throw new Error('only sortable col can use TABLE.$SortCaret !');
+                    contentVnode[idxSortCaret] = this.genSortCaret(h, colNode);
+                }
+                const idxCheckBox = contentVnode.findIndex(v => v === TABLE.$CheckBox);
+                if (idxCheckBox >= 0) {
+                    if (colNode.type !== 'check') throw new Error('only check col can use TABLE.$CheckBox !');
+                    contentVnode[idxCheckBox] = this.genCheckbox(h);
+                }
+            } else {
+                if (colNode.type === 'text') {
+                    contentVnode = [<span>{colNode.label}</span>];
+                } else if (colNode.type === 'check' && colNode.isLeaf) {
+                    hasCheckCol.count++;
+                    contentVnode = [this.genCheckbox(h)];
+                }
+                if (colNode.sortable) {
+                    contentVnode.push(this.genSortCaret(h, colNode));
+                }
             }
-            /*排序按钮*/
-            if (canSort && colNode.sortable) {
-                const ascAttrs = {
-                    class: {
-                        'sort-caret': true,
-                        'asc': true,
-                        'is-active': colNode.sort === ASC
-                    },
-                    on: {
-                        click: (e) => {
-                            this.table.setColumnSort(colNode, colNode.sort === ASC ? null : ASC);
-                        }
+            return contentVnode
+        },
+        genCheckbox(h) {
+            return <span {...{
+                class: ['cell-checkbox'],
+                on: {
+                    click: this.handleCheck
+                }
+            }}/>
+        },
+        genSortCaret(h, colNode) {
+            const ascAttrs = {
+                class: {
+                    'sort-caret': true,
+                    'asc': true,
+                    'is-active': colNode.sort === ASC
+                },
+                on: {
+                    click: (e) => {
+                        this.table.setColumnSort(colNode, colNode.sort === ASC ? null : ASC);
                     }
-                }, descAttrs = {
-                    'class': {
-                        'sort-caret': true,
-                        'desc': true,
-                        'is-active': colNode.sort === DESC
-                    },
-                    on: {
-                        click: (e) => {
-                            this.table.setColumnSort(colNode, colNode.sort === DESC ? null : DESC);
-                        }
+                }
+            }, descAttrs = {
+                'class': {
+                    'sort-caret': true,
+                    'desc': true,
+                    'is-active': colNode.sort === DESC
+                },
+                on: {
+                    click: (e) => {
+                        this.table.setColumnSort(colNode, colNode.sort === DESC ? null : DESC);
                     }
-                };
-                const cartWrapper = <span class="sort-caret-wrapper">
-                                <i {...ascAttrs}/>
-                                <i {...descAttrs}/>
-                            </span>;
-                headerRender.push(cartWrapper)
-            }
-            return headerRender
+                }
+            };
+            return <span class="sort-caret-wrapper">
+                 <i {...ascAttrs}/>
+                 <i {...descAttrs}/>
+            </span>
         }
     },
     render(h) {
@@ -246,8 +262,8 @@ export default {
                     ...this.getTrClass(args),
                     'has-check': !!hasCheckCol.count,
                     [`level-${level}`]: true,
-                    'row':true,
-                    'row--header':true
+                    'row': true,
+                    'row--header': true
                 },
                 style: this.getTrStyle(args),
             }}>{tds}</tr>);

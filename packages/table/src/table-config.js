@@ -1,3 +1,6 @@
+import {genUniqueVal} from "@src/utils/index";
+import {randomString} from "../../../src/utils";
+
 export const CheckRow = 'check-row';//fn( row, checked, checkSet)
 export const CheckChange = 'check-change'; //fn (checkSet)
 
@@ -21,3 +24,11 @@ export const TableEvent = {
     SortChange:SortChange,
     ChangeColSort:ChangeColSort
 }
+
+
+
+
+export const TABLE = Object.freeze({
+    $SortCaret: randomString(16),
+    $CheckBox: randomString(16)
+})

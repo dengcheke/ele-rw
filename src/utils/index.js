@@ -2,7 +2,6 @@ export function isDefined(obj) {
     return !(obj === null || obj === undefined)
 }
 
-
 //async包装器,异步转同步写法,无需try捕获错误
 /*
     e.g
@@ -200,6 +199,24 @@ export function treeToArray(root,childKey='children',dfs=true){
 export function clamp(n, min, max) {
     return Math.max(min, Math.min(max, n));
 }
+
+
+const _str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+export function randomString(len) {
+    len = len || 16;
+    let a = _str.length, n = "";
+    for (let i = 0; i < len; i++) n += _str.charAt(Math.random() * a >> 0);
+    return n
+}
+export function genUniqueVal(){
+    if(window.Symbol){
+        return window.Symbol();
+    }else{
+        return randomString(16);
+    }
+}
+
+
 
 export const throttle = require('loadsh/throttle.js');
 export const cloneDeep = require('loadsh/cloneDeep');

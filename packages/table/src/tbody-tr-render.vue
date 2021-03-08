@@ -1,7 +1,7 @@
 <script type="text/jsx">
 import {mapping, throttle} from "@src/utils/index";
 import {resolveClass, resolveStyle} from "./utils";
-import {TableEvent} from "./event-name";
+import {TableEvent} from "./table-config";
 
 export default {
     name: "tbody-tr-render",

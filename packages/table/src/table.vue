@@ -1,5 +1,7 @@
 <template>
-    <div class="ele-rw-table outer-wrapper" :uid="'table_uid_'+_globalTableId" :style="calcElStyle()">
+    <div class="ele-rw-table outer-wrapper"
+         :uid="'table_uid_'+_globalTableId"
+         :style="calcElStyle()">
         <!--innerWrap 宽高均为确定值,否则宽高循环依赖-->
         <div class="inner-wrapper" :style="calcInnerStyle()" ref="innerWrap"
              style="z-index: 0" v-mousewheel="handleMousewheel">
@@ -63,7 +65,7 @@
 <script type="text/babel">
 import {clamp, isDefined, mapping, treeToArray} from "@src/utils/index";
 import {MouseWheel} from "@src/directives/v-mousewheel";
-import {TableEvent} from "./event-name";
+import {TableEvent} from "./table-config";
 import EmptySlot from '@packages/empty-slot/index';
 import store from './store';
 import TableHeader from './table-header';
@@ -421,7 +423,7 @@ export default {
                 //格式化越界值
                 newTop = clamp(newTop, 0, maxScrollTop);
                 //开始新的动画
-                if (newTop !== this.scrollTop) {
+                if (Math.abs(newTop - this.scrollTop) > 1) {
                     this._animScrollTop = animationScrollValue(this.scrollTop, newTop, (res) => {
                         this.scrollTop = res.value;
                     }, () => {
@@ -429,8 +431,8 @@ export default {
                     })
                 }
                 if (
-                    (this.scrollTop === maxScrollTop && scrollv > 0)
-                    || (this.scrollTop === 0 && scrollv < 0)
+                    (Math.abs(this.scrollTop - maxScrollTop) < 1 && scrollv > 0)
+                    || (this.scrollTop < 1 && scrollv < 0)
                 ) {
                     prevent = false;
                 }
@@ -462,6 +464,7 @@ export default {
                     }
                 }
             }
+            debugger
             prevent && event.preventDefault();
         },
         //鼠标离开组件时
@@ -511,7 +514,6 @@ export default {
                 }
             })
         },
-
 
 
         //设置当前行,不传则取消当前行
@@ -750,9 +752,9 @@ export default {
             this.moveX = ((this.scrollLeft * 100) / bodyWrap.clientWidth);
             //calc 滚动位置，方便显示 固定列的左右shadow
             if (bodyWrap.scrollWidth > bodyWrap.clientWidth) { //存在滚动条
-                if (this.scrollLeft === 0) {
+                if (this.scrollLeft <= 2) {
                     this.scrollPosition = "left";
-                } else if (this.scrollLeft === (bodyWrap.scrollWidth - bodyWrap.clientWidth)) {
+                } else if ((bodyWrap.scrollWidth - bodyWrap.clientWidth - this.scrollLeft) <= 2) {
                     this.scrollPosition = "right";
                 } else {
                     this.scrollPosition = "middle";
