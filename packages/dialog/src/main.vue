@@ -25,6 +25,11 @@ on(document.body, 'keyup', (e) => {
         top && top.$emit('update:show', false);
     }
 });
+on(window,'resize',()=>{
+    winShowCache.forEach(win=>{
+        !win.fullScreen && !win.keepPosition && win.placeAtCenter();
+    })
+})
 let gId = 1;//全局id
 const template = {
     width: null,
