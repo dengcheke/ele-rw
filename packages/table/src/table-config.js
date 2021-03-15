@@ -11,6 +11,7 @@ export const ExpandTreeRow = 'expand-tree-row'; //fn (row, expanded, treeExpandS
 export const TreeExpandChange = 'tree-expand-change'; // fn (treeExpandSet)
 
 export const ClickRow = 'click-row';// fn ( { row, rowIndex, $rowIndex, col, event})
+export const ClickCell = 'click-cell';// fn( { row, rowIndex, $rowIndex, col, $colIndex, event })
 export const ChangeColSort = 'change-col-sort'; // fn(col,sort,allSortColNode);
 export const SortChange = 'sort-change'; // fn (allSortColNode )
 export const TableEvent = {
@@ -22,7 +23,8 @@ export const TableEvent = {
     TreeExpandChange:TreeExpandChange,
     ClickRow:ClickRow,
     SortChange:SortChange,
-    ChangeColSort:ChangeColSort
+    ChangeColSort:ChangeColSort,
+    ClickCell:ClickCell
 }
 
 

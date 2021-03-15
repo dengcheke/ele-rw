@@ -43,6 +43,7 @@
 | expand\-tree\-row    | 展开树形节点时, row 当前行数据， expanded 当前行的展开状态, treeExpandSet 所有展开树节点的结合                                           | function \( row, expanded, treeExpandedSet\)             |
 | tree\-expand\-change | 展开树形节点时, treeExpandedSet 所有展开树节点的集合                                                                                     | function\( treeExpandedSet \)                            |
 | click\-row           | 点击一行时, row 当前行数据， col 点击 cell 位置对应的列， rowIndex 行数据索引, $rowIndex 行 dom 索引                                     | function \( \{ row, rowIndex, $rowIndex, col, event \}\) |
+| click\-cell          | 点击一个cell, row 当前行数据, rowIndex 行数据索引, $rowIndex 行 dom 索引, col 点击 cell 位置对应的列，$colIndex 列 dom 索引,             | function \( \{ row, rowIndex, $rowIndex, col, $colIndex, event \}\) |
 | change\-col\-sort    | 列排序变化时, col 列对象, sort 列的排序('asc'/'desc'/null), allSortNode 所有可排序的节点列表(col = node.col, sort = node.sort)| function( col, sort, allSortNode)
 | sort\-change         | 排序变化时，allSortNode 所有可排序的节点列表 | function \( allSortNode \)                      |
 

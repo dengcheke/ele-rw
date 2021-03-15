@@ -13,6 +13,20 @@ export default {
         }),
     },
     methods: {
+        handleClickCell(e) {
+            const store = this.store;
+            const target = e.currentTarget, id = target.dataset.colUid;
+            const idx = store.leafColumns.findIndex(i => i._uid == id);
+            const args = {
+                row: this.row,
+                rowIndex: this.rowIndex,
+                $rowIndex: this.domIndex,
+                col: store.leafColumns[idx] || null,
+                $colIndex: idx || null,
+                event: e
+            }
+            this.table.dispatchEvent(TableEvent.ClickCell, args);
+        },
         handleClickRow(e) {
             const row = this.row, store = this.store;
             if (this.table.enableCurrentRow) {
@@ -171,6 +185,9 @@ export default {
                     },
                     attrs: {
                         'data-col-uid': colNode._uid
+                    },
+                    on: {
+                        click: this.handleClickCell
                     },
                     key: colNode.key
                 };
