@@ -19,7 +19,7 @@ export default {
             const idx = store.leafColumns.findIndex(i => i._uid == id);
             const args = {
                 row: this.row,
-                rowIndex: this.rowIndex,
+                rowIndex: this.index,
                 $rowIndex: this.domIndex,
                 col: store.leafColumns[idx] || null,
                 $colIndex: idx || null,
