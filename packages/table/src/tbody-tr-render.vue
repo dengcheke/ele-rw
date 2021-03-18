@@ -21,8 +21,8 @@ export default {
                 row: this.row,
                 rowIndex: this.index,
                 $rowIndex: this.domIndex,
-                col: store.leafColumns[idx] || null,
-                $colIndex: idx || null,
+                col: idx !== -1 ? store.leafColumns[idx].col : null,
+                $colIndex: idx !== -1 ? idx : null,
                 event: e
             }
             this.table.dispatchEvent(TableEvent.ClickCell, args);
@@ -37,7 +37,7 @@ export default {
                     store.select$Idx = this.domIndex;
                 }
             }
-            let target = e.target, col;
+            let target = e.target, node;
             if (target.tagName.toLowerCase() === 'tr') {
                 target = null;
             } else {
@@ -47,13 +47,13 @@ export default {
             }
             if (target) {
                 let id = target.dataset.colUid;
-                id && (col = this.store.leafColumns.find(i => i._uid == id))
+                id && (node = this.store.leafColumns.find(i => i._uid == id))
             }
             this.table.dispatchEvent(TableEvent.ClickRow, {
                 row: row,
                 rowIndex: this.index,
                 $rowIndex: this.domIndex,
-                col: col,
+                col: node ? node.col : null,
                 event: e
             });
         },
