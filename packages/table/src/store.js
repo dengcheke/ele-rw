@@ -226,14 +226,14 @@ const TableStore = Vue.extend({
         //计算col宽度布局，决定table整体宽度
         computedColWidth() {
             let sumW = 0, W = this.containerWidth,
-                flexNum = 0, len = this.leafColumns.length;
+                flexWidthNum = 0, len = this.leafColumns.length;
             if (!W || !len) return;
             for (let i = 0; i < len; i++) {
                 const node = this.leafColumns[i], col = node.col;
                 if (isDefined(col.minWidth)) {
                     node.width = parseWidth(col.minWidth, W);
                     sumW += node.width;
-                    flexNum++;
+                    flexWidthNum++;
                 } else if (isDefined(col.width)) {
                     node.width = parseWidth(col.width, W);
                     sumW += node.width;
@@ -243,18 +243,25 @@ const TableStore = Vue.extend({
                 }
             }
             let leftWidth = W - sumW; //剩余可分配宽度
-            if (flexNum && leftWidth > 0) {
-                const aver = (leftWidth / flexNum) >> 0; //每列分得平均宽度 取整
+            if (flexWidthNum && leftWidth > 0) {
+                const aver = (leftWidth / flexWidthNum) >> 0; //取整
                 for (let i = 0; i < this.leafColumns.length; i++) {
                     const node = this.leafColumns[i];
                     if (isDefined(node.col.minWidth)) {
-                        if (flexNum > 1) {
-                            node.width += aver;
-                            flexNum -= 1;
-                            leftWidth -= aver;
-                        } else {
-                            node.width += leftWidth; //所有的小数误差都分给最后一列
+                        node.width += aver;
+                        leftWidth -= aver;
+                    }
+                }
+                //将剩余的分配掉,从前往后
+                if (leftWidth > 0) {
+                    let idx = 0;
+                    while (leftWidth > 0) {
+                        const node = this.leafColumns[idx];
+                        if (node.col.minWidth) {
+                            node.width += 1;
+                            leftWidth -= 1;
                         }
+                        idx += 1;
                     }
                 }
             }
