@@ -122,62 +122,62 @@ export default {
             pre[cur] = true;
             return pre;
         }, {});
-        return <transition name="ele-rw-dialog-fade-out">
-            <div {...{
-                key: key,
-                class: {
-                    'ele-rw-dialog__wrapper': true,
-                    'full-screen': this.fullScreen,
-                    'has-shadow': this.shadow,
-                    'append-to-body': this.appendToBody
-                },
-                directives: [
-                    {
-                        name: 'transfer-dom',
-                        value: this.parentNode,//为null,代表不移动
-                    },
-                    {
-                        name: 'show',
-                        value: this.show
-                    }
-                ],
-                ref: "dialogWrapper"
-            }}>
+        return <div class="ele-rw-dialog-placeholder" key={key}>
+            <transition name="ele-rw-dialog-fade-out">
                 <div {...{
                     class: {
-                        ...clazz,
-                        'ele-rw-dialog': true,
+                        'ele-rw-dialog__wrapper': true,
                         'full-screen': this.fullScreen,
+                        'has-shadow': this.shadow,
+                        'append-to-body': this.appendToBody
                     },
-                    style: {
-                        width: this.parsePx(this.width),
-                        height: this.parsePx(this.height)
-                    },
-                    on: {
-                        mousedown: this.promoteDialogZIndex
-                    },
-                    ref: 'dialog'
+                    directives: [
+                        {
+                            name: 'transfer-dom',
+                            value: this.parentNode,//为null,代表不移动
+                        },
+                        {
+                            name: 'show',
+                            value: this.show
+                        }
+                    ],
+                    ref: "dialogWrapper"
                 }}>
-                    <div class="dialog__title" ref="title" style={{cursor: this.draggable ? 'move' : 'auto'}}>
-                        {this.$scopedSlots.title ? this.$scopedSlots.title() : (this.$slots.title || null)}
-                    </div>
-                    <div class="dialog__content">
-                        {this.$scopedSlots.default ? this.$scopedSlots.default() : (this.$slots.default || null)}
-                    </div>
-                    <div class="dialog__footer">
-                        {this.$scopedSlots.footer ? this.$scopedSlots.footer() : (this.$slots.footer || null)}
+                    <div {...{
+                        class: {
+                            ...clazz,
+                            'ele-rw-dialog': true,
+                            'full-screen': this.fullScreen,
+                        },
+                        style: {
+                            width: this.parsePx(this.width),
+                            height: this.parsePx(this.height)
+                        },
+                        on: {
+                            mousedown: this.promoteDialogZIndex
+                        },
+                        ref: 'dialog'
+                    }}>
+                        <div class="dialog__title" ref="title" style={{cursor: this.draggable ? 'move' : 'auto'}}>
+                            {this.$scopedSlots.title ? this.$scopedSlots.title() : (this.$slots.title || null)}
+                        </div>
+                        <div class="dialog__content">
+                            {this.$scopedSlots.default ? this.$scopedSlots.default() : (this.$slots.default || null)}
+                        </div>
+                        <div class="dialog__footer">
+                            {this.$scopedSlots.footer ? this.$scopedSlots.footer() : (this.$slots.footer || null)}
+                        </div>
                     </div>
                 </div>
-            </div>
-        </transition>
+            </transition>
+        </div>
+
     },
     methods: {
         // 新显示的dialog，z-index提升到最上层
-        // full-screen 和 带 shadow 的 除外,
         promoteDialogZIndex() {
             const wrapper = this.$refs.dialogWrapper;
             if (winShowCache.length > 1) {
-                if (this.fullScreen || this.shadow) return;
                 zIndex += 1;
                 wrapper.style.zIndex = zIndex; //点击的窗口提到最上层
             } else {
