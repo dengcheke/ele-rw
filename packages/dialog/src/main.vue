@@ -286,6 +286,7 @@ export default {
     },
     watch: {
         appendToBody: function () {
+            this.show && this.promoteDialogZIndex();
             this.placeAtCenter();
         },
         draggable: {

@@ -25,7 +25,7 @@ export default {
                 $colIndex: idx || null,
                 event: e
             }
-            this.table.dispatchEvent(TableEvent.ClickCell, args);
+            this.table.dispatchEvent(TableEvent.CellClick, args);
         },
         handleClickRow(e) {
             const row = this.row, store = this.store;
@@ -49,7 +49,7 @@ export default {
                 let id = target.dataset.colUid;
                 id && (col = this.store.leafColumns.find(i => i._uid == id))
             }
-            this.table.dispatchEvent(TableEvent.ClickRow, {
+            this.table.dispatchEvent(TableEvent.RowClick, {
                 row: row,
                 rowIndex: this.index,
                 $rowIndex: this.domIndex,
