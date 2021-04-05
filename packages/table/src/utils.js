@@ -140,7 +140,7 @@ const baseFrameMap = [3, 6, 8, 9, 10, 11, 12, 13, 13, 14, 15, 15, 16, 17, 17]
 const _fMap = {};
 
 function getScrollTotalTimes(v) {
-    if (_fMap[v]) return _fMap[v / 20 >> 0] * 16.66;
+    if (_fMap[v / 20 >> 0]) return _fMap[v / 20 >> 0] * 16.66;
     let f = getFrame(v, Math.ceil(Math.log2(v / 300)));
     v > 160 && (f += 1);
     f = Math.min(40, f);

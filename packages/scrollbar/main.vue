@@ -1,5 +1,5 @@
 <template>
-    <div class="custom-scrollbar" :style="calcElStyle()">
+    <div class="ele-rw-scrollbar" :style="calcElStyle()">
         <div class="scrollbar__wrap" ref="wrap"
              :style="calcWrapStyle()" @scroll.passive="handleScroll($event)">
             <div class="scrollbar__view" :style="viewStyle" :class="viewClass" ref="view">
@@ -12,13 +12,13 @@
 </template>
 
 <script>
-import Bar from './bar';
+import Bar from '../bar';
 import ResizeObserver from 'resize-observer-polyfill';
 import {getScrollBarWidth, on} from "@src/utils/dom";
-import {clamp} from "../src/utils/index";
+import {clamp} from "../../src/utils";
 
 export default {
-    name: "custom-scrollbar",
+    name: "EleRwScrollbar",
     components: {Bar},
     props: {
         viewClass: {
@@ -157,7 +157,7 @@ export default {
 </script>
 
 <style lang="less">
-.custom-scrollbar {
+.ele-rw-scrollbar {
     width: 100%;
     position: relative;
     overflow: hidden;
@@ -214,15 +214,6 @@ export default {
         &:hover {
             background-color: rgba(144, 147, 153, .5);
         }
-    }
-}
-
-.custom-scrollbar.flexible {
-    .scrollbar__view {
-        min-height: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
     }
 }
 </style>

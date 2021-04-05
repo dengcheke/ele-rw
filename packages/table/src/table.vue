@@ -464,7 +464,6 @@ export default {
                     }
                 }
             }
-            debugger
             prevent && event.preventDefault();
         },
         //鼠标离开组件时

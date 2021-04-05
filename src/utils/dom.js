@@ -1,10 +1,21 @@
+let passiveSupported = false;
+try {
+    const options = Object.defineProperty({}, "passive", {
+        get: function() {
+            passiveSupported = true;
+        }
+    });
+    window.addEventListener("passive-test", null, options);
+} catch(err) {
+    console.log(err)
+}
 export const on = (function () {
     if (document.addEventListener) {
-        return function (element, event, handler) {
+        return function (element, event, handler,opts) {
             if (element && event && handler) {
-                element.addEventListener(event, handler, false);
+                element.addEventListener(event, handler, passiveSupported ? opts : false);
                 return function () {
-                    element.removeEventListener(event, handler, false);
+                    element.removeEventListener(event, handler, passiveSupported ? opts : false);
                 }
             }
         };
