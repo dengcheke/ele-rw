@@ -12,7 +12,7 @@ Vue.use(EleRwTable);
 import CodePanel from './components/code-panel';
 Vue.component('code-panel',CodePanel);
 
-import Scrollbar from '../packages/custom-scrollbar';
+import Scrollbar from '../packages/scrollbar/main';
 Vue.component('scroll-bar',Scrollbar)
 
 import Dialog from '../packages/dialog';

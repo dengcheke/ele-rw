@@ -464,7 +464,6 @@ export default {
                     }
                 }
             }
-            debugger
             prevent && event.preventDefault();
         },
         //鼠标离开组件时
@@ -541,7 +540,7 @@ export default {
             if (node.sort !== sort) {
                 node.sort = sort;
                 this.store.sortChangeTrigger++;
-                emit && this.dispatchEvent(TableEvent.ChangeColSort, node.col, node.sort, this.store.sortColumns);
+                emit && this.dispatchEvent(TableEvent.ColSortChange, node.col, node.sort, this.store.sortColumns);
             }
         },
         //移除所有的排序
@@ -599,7 +598,7 @@ export default {
                 }
                 store.checkNums = checkedSet.size;
                 store.checkTrigger++;
-                emit && this.dispatchEvent(TableEvent.CheckRow, row, checked, checkedSet /*readOnly*/);
+                emit && this.dispatchEvent(TableEvent.RowCheck, row, checked, checkedSet /*readOnly*/);
             }
 
             function checkParent(parent) {
@@ -641,7 +640,7 @@ export default {
                 store.expandTrigger++;
                 store.updateRenderList();
                 store.updateSelect();
-                emit && this.dispatchEvent(TableEvent.ExpandRow, row, expanded, expandedSet/*readOnly*/);
+                emit && this.dispatchEvent(TableEvent.RowExpand, row, expanded, expandedSet/*readOnly*/);
             }
         },
         setAllExpanded(expanded) {
@@ -690,7 +689,7 @@ export default {
                 store.treeExpandTrigger++;
                 store.updateRenderList();
                 store.updateSelect();
-                emit && this.dispatchEvent(TableEvent.ExpandTreeRow, row, expanded, store.treeExpandedSet/*readOnly*/);
+                emit && this.dispatchEvent(TableEvent.TreeRowExpand, row, expanded, store.treeExpandedSet/*readOnly*/);
             }
         },
         setAllTreeExpanded(expanded) {

@@ -1,33 +1,30 @@
-import {genUniqueVal} from "@src/utils/index";
-import {randomString} from "../../../src/utils";
+import {randomString} from "@src/utils";
 
-export const CheckRow = 'check-row';//fn( row, checked, checkSet)
+export const RowCheck = 'row-check';//fn( row, checked, checkSet)
 export const CheckChange = 'check-change'; //fn (checkSet)
 
-export const ExpandRow = 'expand-row';//fn(row, expanded, expandedSet)
+export const RowExpand = 'row-expand';//fn(row, expanded, expandedSet)
 export const ExpandChange = 'expand-change'; // fn(expandedSet)
 
-export const ExpandTreeRow = 'expand-tree-row'; //fn (row, expanded, treeExpandSet)
+export const TreeRowExpand = 'tree-row-expand'; //fn (row, expanded, treeExpandSet)
 export const TreeExpandChange = 'tree-expand-change'; // fn (treeExpandSet)
 
-export const ClickRow = 'click-row';// fn ( { row, rowIndex, $rowIndex, col, event})
-export const ClickCell = 'click-cell';// fn( { row, rowIndex, $rowIndex, col, $colIndex, event })
-export const ChangeColSort = 'change-col-sort'; // fn(col,sort,allSortColNode);
+export const RowClick = 'row-click';// fn ( { row, rowIndex, $rowIndex, col, event})
+export const CellClick = 'cell-click';// fn( { row, rowIndex, $rowIndex, col, $colIndex, event })
+export const ColSortChange = 'change-col-sort'; // fn(col,sort,allSortColNode);
 export const SortChange = 'sort-change'; // fn (allSortColNode )
 export const TableEvent = {
-    CheckRow:CheckRow,
+    RowCheck:RowCheck,
     CheckChange:CheckChange,
-    ExpandRow:ExpandRow,
+    RowExpand:RowExpand,
     ExpandChange:ExpandChange,
-    ExpandTreeRow:ExpandTreeRow,
+    TreeRowExpand:TreeRowExpand,
     TreeExpandChange:TreeExpandChange,
-    ClickRow:ClickRow,
+    RowClick:RowClick,
     SortChange:SortChange,
-    ChangeColSort:ChangeColSort,
-    ClickCell:ClickCell
+    ColSortChange:ColSortChange,
+    CellClick:CellClick
 }
-
-
 
 
 export const TABLE = Object.freeze({

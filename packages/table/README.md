@@ -36,16 +36,16 @@
 
 | 事件名               | 说明                                                                                                                                     | 参数                                                     |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| check\-row           | 勾选 row 时，row 当前行数据，checked 当前行的勾选状态， checkedSet 所有勾选 row 的集合                                                   | function \( row, checked，checkedSet\)                   |
-| check\-change        | 勾选发生变化 ,checkedSet 所有勾选 row 的集合                                                                                             | function \( checkedSet \)                                |
-| expand\-row          | 展开 row 时，row 当前行数据，expanded 当前行的展开状态， expandedSet 所有展开 row 的集合                                                 | function \( row, expanded, expandedSet\)                 |
-| expand\-change       | 展开变化时, expandedList 所有展开 row 的列表                                                                                             | function \( expandedSet \)                               |
-| expand\-tree\-row    | 展开树形节点时, row 当前行数据， expanded 当前行的展开状态, treeExpandSet 所有展开树节点的结合                                           | function \( row, expanded, treeExpandedSet\)             |
-| tree\-expand\-change | 展开树形节点时, treeExpandedSet 所有展开树节点的集合                                                                                     | function\( treeExpandedSet \)                            |
-| click\-row           | 点击一行时, row 当前行数据， col 点击 cell 位置对应的列， rowIndex 行数据索引, $rowIndex 行 dom 索引                                     | function \( \{ row, rowIndex, $rowIndex, col, event \}\) |
-| click\-cell          | 点击一个cell, row 当前行数据, rowIndex 行数据索引, $rowIndex 行 dom 索引, col 点击 cell 位置对应的列，$colIndex 列 dom 索引,             | function \( \{ row, rowIndex, $rowIndex, col, $colIndex, event \}\) |
-| change\-col\-sort    | 列排序变化时, col 列对象, sort 列的排序('asc'/'desc'/null), allSortNode 所有可排序的节点列表(col = node.col, sort = node.sort)| function( col, sort, allSortNode)
-| sort\-change         | 排序变化时，allSortNode 所有可排序的节点列表 | function \( allSortNode \)                      |
+| row-check           | 勾选 row 时，row 当前行数据，checked 当前行的勾选状态， checkedSet 所有勾选 row 的集合                                                   | function \( row, checked，checkedSet\)                   |
+| check-change        | 勾选发生变化 ,checkedSet 所有勾选 row 的集合                                                                                             | function \( checkedSet \)                                |
+| row-expand          | 展开 row 时，row 当前行数据，expanded 当前行的展开状态， expandedSet 所有展开 row 的集合                                                 | function \( row, expanded, expandedSet\)                 |
+| expand-change       | 展开变化时, expandedList 所有展开 row 的列表                                                                                             | function \( expandedSet \)                               |
+| tree-row-expand     | 展开树形节点时, row 当前行数据， expanded 当前行的展开状态, treeExpandSet 所有展开树节点的结合                                           | function \( row, expanded, treeExpandedSet\)             |
+| tree-expand-change  | 展开树形节点时, treeExpandedSet 所有展开树节点的集合                                                                                     | function\( treeExpandedSet \)                            |
+| row-click           | 点击一行时, row 当前行数据， col 点击 cell 位置对应的列， rowIndex 行数据索引, $rowIndex 行 dom 索引                                     | function \( \{ row, rowIndex, $rowIndex, col, event \}\) |
+| cell-click          | 点击一个cell, row 当前行数据, rowIndex 行数据索引, $rowIndex 行 dom 索引, col 点击 cell 位置对应的列，$colIndex 列 dom 索引,             | function \( \{ row, rowIndex, $rowIndex, col, $colIndex, event \}\) |
+| col-sort-change     | 列排序变化时, col 列对象, sort 列的排序('asc'/'desc'/null), allSortNode 所有可排序的节点列表(col = node.col, sort = node.sort)| function( col, sort, allSortNode)
+| sort-change         | 排序变化时，allSortNode 所有可排序的节点列表 | function \( allSortNode \)                      |
 
 ### table methods
 
