@@ -321,12 +321,12 @@ export default {
         },
         fullScreen: {
             handler: function (v) {
-                winShowCache.forEach(i => {
-                    if (i !== this) {
-                        i.checkNestedPosition();
-                    }
-                });
                 this.$nextTick(() => {
+                    winShowCache.forEach(i => {
+                        if (i !== this) {
+                            i.checkNestedPosition();
+                        }
+                    });
                     const dialog = this.$refs.dialog;
                     const style = dialog.style;
                     if (v) {

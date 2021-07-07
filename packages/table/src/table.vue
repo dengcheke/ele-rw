@@ -1,8 +1,6 @@
 <template>
-    <div class="ele-rw-table outer-wrapper"
-         :uid="'table_uid_'+_globalTableId"
+    <div class="ele-rw-table outer-wrapper" :uid="'table_uid_'+_globalTableId"
          :style="calcElStyle()">
-        <!--innerWrap 宽高均为确定值,否则宽高循环依赖-->
         <div class="inner-wrapper" :style="calcInnerStyle()" ref="innerWrap"
              style="z-index: 0" v-mousewheel="handleMousewheel">
             <div class="table-main">
@@ -114,7 +112,6 @@ export default {
         height: {
             type: Number | String,
             default: 'auto',
-            desc: '定义height就表示外部高度固定了(有滚动条),不定义就是无限增长模式(无滚动条)'
         },
         maxHeight: {
             type: Number,
@@ -233,12 +230,14 @@ export default {
         this.store = new store();
         this.store.table = this;
         this._globalTableId = getTableId();
+        //---test only---
         this.headerStyleElm = document.createElement('style');
         document.body.appendChild(this.headerStyleElm);
         this.headerStyleElm.setAttribute('use-for-table-' + this._globalTableId, "");
         this.$once('hook:beforeDestroy', () => {
             document.body.removeChild(this.headerStyleElm)
         })
+        //---------------
         this._animScrollTop = this._animScrollLeft = null;
         return {
             headerWrapHeight: 0, //header容器高度
@@ -261,7 +260,6 @@ export default {
         }
     },
     mounted() {
-        window.__vm = this;
         requestAnimationFrame(() => {
             this.initEvent();
             this.updateScrollBar();
@@ -471,15 +469,42 @@ export default {
             this.store.hover$Idx = this.store.hoverRow = null;
         },
         //重置滚动位置
-        resetScroll() {
+        resetScroll(cross = "left", down = 'top') {
             this.$nextTick(() => {
                 const {bodyWrap, bodyWrapLeft, bodyWrapRight} = this.$refs;
+                let scrollLeft = this._parseCross(cross),
+                    scrollTop = this._parseDown(down);
                 [bodyWrap, bodyWrapLeft, bodyWrapRight].forEach(wrap => {
                     if (wrap) {
-                        wrap.scrollTop = wrap.scrollLeft = 0;
+                        scrollTop !== undefined && (wrap.scrollTop = scrollTop);
+                        scrollLeft !== undefined && (wrap.scrollLeft = scrollLeft);
                     }
-                })
+                });
             })
+        },
+        _parseCross(cross) {
+            const {bodyWrap} = this.$refs;
+            if (typeof cross === 'number') {
+                return cross
+            } else if (cross === 'right') {
+                return bodyWrap ? bodyWrap.scrollWidth - bodyWrap.clientWidth : 0;
+            } else if (cross === 'left') {
+                return 0
+            } else {
+                return undefined
+            }
+        },
+        _parseDown(down) {
+            const {bodyWrap} = this.$refs;
+            if (typeof down === 'number') {
+                return down
+            } else if (down === 'bottom') {
+                return bodyWrap ? bodyWrap.scrollHeight - bodyWrap.clientHeight : 0;
+            } else if (down === 'top') {
+                return 0
+            } else {
+                return undefined
+            }
         },
         /*代理子组件事件*/
         dispatchEvent(topic, ...args) {
@@ -776,7 +801,7 @@ export default {
         tableData: {
             handler: function (newly, older) {
                 //重新赋值,滚动到左上角
-                newly !== older && this.resetScrollOnDataChange && this.resetScroll();
+                newly !== older && this.resetScrollOnDataChange && this.resetScroll(0,0);
                 this.store.handleTableDataChange();
             },
             immediate: true
