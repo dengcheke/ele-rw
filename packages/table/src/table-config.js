@@ -1,4 +1,4 @@
-import {randomString} from "@src/utils";
+import {randomString} from "@src/utils/index";
 
 export const RowCheck = 'row-check';//fn( row, checked, checkSet)
 export const CheckChange = 'check-change'; //fn (checkSet)

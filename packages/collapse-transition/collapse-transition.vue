@@ -73,6 +73,8 @@ export default {
 </script>
 <style>
 .ele-rw-collapse-transition {
-    transition: .3s height ease-in-out, .3s padding-top ease-in-out, .3s padding-bottom ease-in-out
+    transition: .3s height ease-in-out,
+    .3s padding-top ease-in-out,
+    .3s padding-bottom ease-in-out
 }
 </style>

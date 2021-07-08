@@ -6,17 +6,14 @@ import App from './app';
 import router from './router'
 
 
-import EleRwTable from '../packages/table/index';
+import EleRwTable from '../lib/table';
+import Scrollbar from '../lib/scrollbar';
+import Dialog from '../lib/dialog';
+Vue.component('scroll-bar',Scrollbar)
 Vue.use(EleRwTable);
-
+Vue.use(Dialog);
 import CodePanel from './components/code-panel';
 Vue.component('code-panel',CodePanel);
-
-import Scrollbar from '../packages/scrollbar/main';
-Vue.component('scroll-bar',Scrollbar)
-
-import Dialog from '../packages/dialog';
-Vue.use(Dialog);
 
 new Vue({
     el:'#app',

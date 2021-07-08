@@ -1,8 +1,8 @@
 const path = require('path');
 const VueLoaderPlugin = require('vue-loader/lib/plugin');
-const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 module.exports = {
+    context: __dirname,
     mode: 'development',
     entry: {
         app: path.resolve(__dirname, './example/main.js')
@@ -16,7 +16,7 @@ module.exports = {
         alias: {
             '@src': path.resolve(__dirname, './src'),
             '@lib': path.resolve(__dirname, './lib'),
-            '@packages':path.resolve(__dirname,'./packages'),
+            '@packages': path.resolve(__dirname, './packages'),
             'ele-rw-ui': path.resolve(__dirname, './')
         }
     },
@@ -37,7 +37,7 @@ module.exports = {
                 include: [
                     path.resolve(__dirname, 'node_modules/highlight.js/lib'),
                     path.resolve(__dirname, 'packages'),
-                    path.resolve(__dirname, 'example/components')
+                    path.resolve(__dirname, 'example')
                 ],
                 loader: 'babel-loader',
             },
@@ -61,32 +61,11 @@ module.exports = {
             }
         ]
     },
-    optimization:{
-        splitChunks:{
-            chunks: "all",
-            cacheGroups:{
-                hljs:{
-                    name: 'hljs',
-                    minChunks: 1,
-                    test: function (module) {
-                        if (module.resource) {
-                            const path = module.resource;
-                            return /[\\/]node_modules[\\/]highlight\.js[\\/]/.test(path)
-                        } else {
-                            return false;
-                        }
-                    },
-                    priority: 3,
-                }
-            }
-        }
-    },
     devServer: {
         port: 8888,
     },
     plugins: [
         new VueLoaderPlugin(),
-
         new HtmlWebpackPlugin({
             template: path.resolve(__dirname, './example/index.html'),
             title: 'Output Management'

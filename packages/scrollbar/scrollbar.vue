@@ -12,10 +12,10 @@
 </template>
 
 <script>
-import Bar from '../bar';
+import Bar from '@packages/bar/index';
 import ResizeObserver from 'resize-observer-polyfill';
 import {getScrollBarWidth, on} from "@src/utils/dom";
-import {clamp} from "../../src/utils";
+import {clamp} from "@src/utils/index";
 
 export default {
     name: "EleRwScrollbar",
@@ -68,7 +68,7 @@ export default {
         init() {
             const un = on(window, 'resize', () => {
                 const dpr = window.devicePixelRatio;
-                if (dpr != this.dpr) {
+                if (dpr !== this.dpr) {
                     this.dpr = dpr;
                     this.barWidth = Math.ceil(getScrollBarWidth());
                 }

@@ -61,16 +61,16 @@
 </template>
 
 <script type="text/babel">
+import ResizeObserver from 'resize-observer-polyfill';
 import {clamp, isDefined, mapping, treeToArray} from "@src/utils/index";
 import {MouseWheel} from "@src/directives/v-mousewheel";
-import {TableEvent} from "./table-config";
 import EmptySlot from '@packages/empty-slot/index';
+import Bar from '@packages/bar/index';
+import {TableEvent} from "./table-config";
 import store from './store';
 import TableHeader from './table-header';
 import TableBody from './table-body';
 import TableFooter from './table-footer';
-import ResizeObserver from 'resize-observer-polyfill';
-import Bar from '../../bar';
 import {animationScrollValue, getTableId} from "./utils";
 
 export default {
@@ -119,7 +119,7 @@ export default {
         },
         minHeight: {
             type: Number,
-            default: null
+            default: 80
         },
         resizable: {
             type: Boolean,

@@ -26,9 +26,9 @@
 </template>
 
 <script>
-import EmptySlot from './empty-slot/main';
+import EmptySlot from './empty-slot/empty-slot';
 import {addResizeListener, getScrollBarWidth} from "../src/utils/dom";
-import Bar from './bar';
+import Bar from './bar/main';
 import {HOOK_BEFOREDESTROY} from "@config/global-const";
 
 export default {

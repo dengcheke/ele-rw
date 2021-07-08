@@ -1,26 +1,21 @@
 module.exports = {
-    "presets": [
+    presets: [
         [
             "@babel/preset-env",
             {
-                "modules": "commonjs",
+                modules: "commonjs",
+                targets: "> 0.25%, not dead",
             }
         ]
     ],
-    "plugins": [
-        "@vue/babel-plugin-transform-vue-jsx"
+    plugins: [
+        "@vue/babel-plugin-transform-vue-jsx",
+        [
+            "@babel/plugin-transform-runtime",
+            {
+                corejs: 3,
+                helpers: true,
+            }
+        ]
     ],
-    "env": {
-        "utils": {
-            "presets": [
-                [
-                    "@babel/preset-env",
-                    {
-                        "loose": true,
-                        "modules": "commonjs",
-                    }
-                ]
-            ]
-        }
-    }
 }

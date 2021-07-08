@@ -1,5 +1,5 @@
 <script type="jsx">
-import {mapping} from "@src/utils";
+import {mapping} from "@src/utils/index";
 import {resolveClass, resolveStyle} from "./utils";
 
 export default {

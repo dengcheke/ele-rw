@@ -2,25 +2,26 @@ const path = require('path');
 const nodeExternals = require('webpack-node-externals');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const VueLoaderPlugin = require('vue-loader/lib/plugin');
-const {entries,externals} = require('./components');
+const {entries, externals, componentRoot} = require('./components');
 
 module.exports = {
     mode: 'production',
     entry: entries,
     output: {
-        path: path.join(process.cwd(), 'lib'),
+        path: path.resolve(__dirname, componentRoot),
         publicPath: '/',
         filename: '[name].js',
-        chunkFilename: '[name].js',
-        libraryTarget: 'commonjs2',
+        library: {
+            type: "commonjs2"
+        }
     },
     resolve: {
         extensions: ['.js', '.vue', '.json'],
         alias: {
             '@src': path.resolve(__dirname, './src'),
             '@lib': path.resolve(__dirname, './lib'),
-            '@packages': path.resolve(__dirname,'./packages'),
-            'eleRw-ui':path.resolve(__dirname,'./')
+            '@packages': path.resolve(__dirname, './packages'),
+            'eleRw-ui': path.resolve(__dirname, './')
         },
         modules: ['node_modules']
     },

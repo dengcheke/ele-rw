@@ -1,4 +1,4 @@
-import Scrollbar from './main';
+import Scrollbar from './scrollbar';
 
 Scrollbar.install = function (Vue) {
     Vue.component(Scrollbar.name, Scrollbar);
