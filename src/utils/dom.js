@@ -49,7 +49,6 @@ export const off = (function () {
 /*-------intersect observer----------*/
 require('intersection-observer');
 export const IntersectionObserver = window.IntersectionObserver;
-//即使listener为空，observer仍然存在
 const intersectHandler = function (entries) {
     for (let entry of entries) {
         const listeners = entry.target.__intersectListeners__ || [];

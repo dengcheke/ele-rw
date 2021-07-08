@@ -1,8 +1,8 @@
 <template>
-    <div class="custom-img" :class="['is-'+status]">
+    <div class="ele-rw-img" :class="['is-'+status]">
         <div v-if="isLoading" class="img__loading-wrapper">
             <slot name="loading">
-                <div class="loading-icon"/>
+                <div class="loading-icon iconfont icon-loading"/>
             </slot>
         </div>
         <div v-if="isError" class="img__error-wrapper">
@@ -12,18 +12,16 @@
         </div>
         <img v-if="isLoaded" v-bind="$attrs"
              v-on="$listeners" :src="src" class="img__inner"/>
-        <slot></slot>
+        <slot/>
     </div>
 </template>
 
 <script>
-import {IntersectionObserver} from "../src/utils/dom";
-import {asyncWrap} from "../src/utils/index";
-import {HOOK_BEFOREDESTROY} from "@config/global-const";
+import {IntersectionObserver} from "@src/utils/dom";
 
 const NONE = 'none', LOADING = 'loading', LOADED = 'loaded', ERROR = 'error';
 export default {
-    name: "custom-image",
+    name: "CustomImg",
     props: {
         src: String,
         lazy: {
@@ -38,9 +36,8 @@ export default {
     inheritAttrs: false,
     data() {
         return {
-            token: 0,//标记，当前请求的flag, 判断是否是当前请求
+            token: 0,
             status: NONE,
-            visible: null, //可见状态
         }
     },
     computed: {
@@ -57,28 +54,25 @@ export default {
     mounted() {
         const rm1 = this.$watch('lazy', (lazy) => {
             //设置lazy不会主动创建observer, lazy在src变更时才会生效
-            //设置为false,会清除已有的observer,若此时有图片未加载，则会立刻开始加载,若已加载完成，则保持状态
-            if (!lazy && this._io) {
-                this._clearObserver();
-                if (this.status === NONE) {
-                    this.load();
-                }
+            //设置为false,会清除已有的observer,若此时有图片未加载，则会立刻开始加载
+            if (!lazy) {
+                //移除已有的
+                this._io && this._clearObserver();
+                //图片还未加载
+                this.status === NONE && this.src && this.load();
             }
         });
-        const rm2 = this.$watch('src', (n,o) => {
-            // src变化, 切换图片
-            // 即便src不存在，也需要监听，
-            // 因为可能src是动态获取的,可见的时候才获取，src有有效期，提前获取过期后可见则加载会失败
+        const rm2 = this.$watch('src', (n, o) => {
             this.status = NONE; //重置状态
             if (this.lazy) { //懒加载
-                requestAnimationFrame(() => {
-                    this.initObserver(); //开一个观察者
+                this.$nextTick(() => {
+                    this.initObserver()
                 })
             } else {
                 this.load();//否则直接加载
             }
         }, {immediate: true});
-        this.$once(HOOK_BEFOREDESTROY, () => {
+        this.$once("hook:beforeDestroy", () => {
             rm1 && rm1();
             rm2 && rm2();
         })
@@ -93,17 +87,18 @@ export default {
         initObserver() {
             this._clearObserver();//清除之前的
             const el = this.$el;
-            const io = this._io = new IntersectionObserver(async (entries) => {
+            const io = this._io = new IntersectionObserver(entries => {
                 const entry = entries[0];
                 const intersect = entry.isIntersecting;
                 if (intersect && this.status === NONE) {
                     this.$emit('is-show');
-                    if(this.src){
-                        await this.load();//加载完后，无论成功还是失败，状态确定，无需在观测
-                        io.disconnect();
-                        if (io === this._io) {
-                            this._io = null;
-                        }
+                    if (this.src) {
+                        this.load().then(res => {
+                            io.disconnect();
+                            if (io === this._io) {
+                                this._io = null;
+                            }
+                        })
                     }
                 }
             }, {threshold: [this.ratio]})
@@ -111,28 +106,31 @@ export default {
         },
         loadImage() {
             this.token++;
-            return new Promise((res, rej) => {
+            return new Promise((resolve) => {
                 const img = new Image(), src = this.src, token = this.token;
-                img.onload = () => res({
-                    token: token
+                img.onload = () => resolve({
+                    token: token,
+                    status: 'success'
                 });
-                img.onerror = () => rej({
-                    token: token
+                img.onerror = () => resolve({
+                    token: token,
+                    status: 'error'
                 });
                 img.src = src;
             })
         },
         async load() {
             this.status = LOADING;
-            const [result, err] = await asyncWrap(this.loadImage());
+            const {token, status} = await this.loadImage();
             //src 变更后,视为新请求，比较token
-            if (err && err.token === this.token) {
+            if (token !== this.token) return;
+            if (status === 'error') {
                 this.status = ERROR;
                 this.$emit('status-change', 'error');
-            } else if (result && result.token === this.token) {
+            } else {
                 this.status = LOADED;
-                //make sure <img> is created
-                this.$nextTick(()=>{
+                //make sure <img> is created ( not lazy and not visible)
+                this.$nextTick(() => {
                     this.$emit('status-change', 'success');
                 })
             }
@@ -145,38 +143,40 @@ export default {
 </script>
 
 <style lang="less">
-.custom-img {
+@import "/src/font/iconfont.css";
+
+.ele-rw-img {
     display: inline-block;
     vertical-align: middle;
     background-color: white;
-
+    position: relative;
+    overflow: hidden;
     &.is-loaded {
         background-color: transparent;
     }
 
-    .img__loading-wrapper,
-    .img__error-wrapper,
     .img__inner {
         width: 100%;
         height: 100%;
+        display: block;
     }
 
     .img__loading-wrapper,
     .img__error-wrapper {
-        position: relative;
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
         display: flex;
         align-items: center;
         justify-content: center;
     }
 
     .loading-icon {
-        width: 100%;
-        height: 100%;
-        max-width: 30px;
-        max-height: 30px;
-        background-size: 100% 100%;
-        background-image: url("~@assets/img/loading_blue.png");
-        animation: loading-rotate 1s linear infinite;
+        font-size: 32px;
+        display: inline-block;
+        vertical-align: bottom;
+        animation: loading-rotate 2s linear infinite;
         @keyframes loading-rotate {
             0% {
                 transform: rotate(0deg)
