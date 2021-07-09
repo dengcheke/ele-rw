@@ -12,7 +12,7 @@
 </template>
 
 <script>
-import Bar from '@packages/bar/index';
+import Bar from '@packages/bar';
 import ResizeObserver from 'resize-observer-polyfill';
 import {getScrollBarWidth, on} from "@src/utils/dom";
 import {clamp} from "@src/utils/index";

@@ -8,6 +8,7 @@ import Viewer from 'viewerjs'
 import 'viewerjs/dist/viewer.css'
 
 export default {
+    name: "EleRwViewer",
     props: {
         images: {
             type: Array
@@ -16,8 +17,6 @@ export default {
             type: Boolean,
             default: false
         },
-        // 不建议使用，会导致内部所有组件render,
-        // 直接父组件$ref引用，然后调用onChange
         trigger: {
             default: null
         },
@@ -56,7 +55,6 @@ export default {
             this.$emit('inited', this.$viewer)
         }
     },
-
     watch: {
         images() {
             this.$nextTick(() => {
@@ -80,11 +78,9 @@ export default {
             deep: true
         }
     },
-
     mounted() {
         this.createViewer();
     },
-
     destroyed() {
         this.destroyViewer()
     }

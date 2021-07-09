@@ -8,11 +8,11 @@ import router from './router'
 import EleRwTable from '../lib/table';
 import Scrollbar from '../lib/scrollbar';
 import Dialog from '../lib/dialog';
-import Image from '../packages/image/image'
+import Image from '../lib/image'
 import CodePanel from './components/code-panel';
 
 Vue.use(hljs.vuePlugin);
-Vue.component('custom-image', Image);
+Vue.use(Image);
 Vue.component('scroll-bar', Scrollbar)
 Vue.use(EleRwTable);
 Vue.use(Dialog);

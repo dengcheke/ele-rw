@@ -64,8 +64,8 @@
 import ResizeObserver from 'resize-observer-polyfill';
 import {clamp, isDefined, mapping, treeToArray} from "@src/utils/index";
 import {MouseWheel} from "@src/directives/v-mousewheel";
-import EmptySlot from '@packages/empty-slot/index';
-import Bar from '@packages/bar/index';
+import EmptySlot from '@packages/empty-slot';
+import Bar from '@packages/bar';
 import {TableEvent} from "./table-config";
 import store from './store';
 import TableHeader from './table-header';

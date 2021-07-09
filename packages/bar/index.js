@@ -1,6 +1,6 @@
-import Component from './bar';
+import Comp from './bar';
 
-Component.install = function (Vue) {
-    Vue.component(Component.name, Component);
+Comp.install = function (Vue) {
+    Vue.component(Comp.name, Comp);
 };
-export default Component;
+export default Comp;

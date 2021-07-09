@@ -21,7 +21,7 @@ import {IntersectionObserver} from "@src/utils/dom";
 
 const NONE = 'none', LOADING = 'loading', LOADED = 'loaded', ERROR = 'error';
 export default {
-    name: "CustomImg",
+    name: "EleRwImg",
     props: {
         src: String,
         lazy: {
@@ -151,6 +151,7 @@ export default {
     background-color: white;
     position: relative;
     overflow: hidden;
+
     &.is-loaded {
         background-color: transparent;
     }

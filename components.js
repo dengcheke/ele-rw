@@ -5,11 +5,13 @@ const path = require('path');
 const libName = require('./package.json').name;
 const componentRoot = 'lib';
 const externalRoot = `${libName}/${componentRoot}`;
-const entries = {}, externals = {
+const entries = {
+
+}, externals = {
     '@src/utils/dom': `${externalRoot}/utils/dom`,
     '@src/utils/index': `${externalRoot}/utils/index`,
     '@src/directives/v-mousewheel': `${externalRoot}/directives/v-mousewheel`,
-    '@src/directives/v-transfer-dom': `${externalRoot}/directives/v-transfer-dom`,
+    '@src/directives/v-transfer-dom': `${externalRoot}/directives/v-transfer-dom`
 };
 
 const moduleList = fs.readdirSync(path.resolve(__dirname, './packages'));
@@ -18,9 +20,11 @@ moduleList.forEach(item => {
     if (file.isDirectory()) {
         entries[item] = `./packages/${item}/index.js`;
         externals[`@packages/${item}/index`] = `${externalRoot}/${item}`
+        externals[`@packages/${item}`] = `${externalRoot}/${item}`
     }
 });
 console.log(entries);
+console.log(externals)
 module.exports = {
     entries, externals,
     componentRoot

@@ -1,4 +1,4 @@
-import Comp from './scrollbar';
+import Comp from './img-viewer';
 
 Comp.install = function (Vue) {
     Vue.component(Comp.name, Comp);

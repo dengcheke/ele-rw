@@ -21,7 +21,7 @@
         </div>
         <bar :move="moveX" :size="sizeWidth" ref="barX"/>
         <bar vertical :move="moveY" :size="sizeHeight" ref="barY"/>
-        <empty-slot :show="isEmpty" :style="{minHeight:this.minHeight?this.minHeight+'px':'none'}"></empty-slot>
+        <empty-slot :show="isEmpty" :style="{minHeight:this.minHeight?this.minHeight+'px':'none'}"/>
     </div>
 </template>
 

@@ -31,7 +31,6 @@ const BAR_MAP = {
     }
 };
 import {off, on} from "@src/utils/dom";
-
 export default {
     name: 'EleRwBar',
     props: {
@@ -111,7 +110,7 @@ export default {
     },
     destroyed() {
         off(document, 'mouseup', this.mouseUpDocumentHandler);
-    }
+    },
 }
 
 </script>

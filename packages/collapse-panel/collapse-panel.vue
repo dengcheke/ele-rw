@@ -1,5 +1,5 @@
 <template>
-    <div class="collapse-panel__wrapper">
+    <div class="ele-rw-collapse-panel">
         <div class="collapse-panel__title" @click.stop="onClickRow" onselectstart="return false;">
             <slot name="title">
                 <span style="line-height: 32px">{{ title }}</span>
@@ -19,10 +19,10 @@
 </template>
 
 <script>
-import CollapseTransition from '@comp/base/common/collapase-transition';
+import CollapseTransition from '@packages/collapse-transition';
 
 export default {
-    name: "custom-collapse-content",
+    name: "EleRwCollapsePanel",
     components: {CollapseTransition},
     props: {
         expandOnClickTitle: {
@@ -50,7 +50,7 @@ export default {
 </script>
 
 <style lang="less">
-.collapse-panel__wrapper {
+.ele-rw-collapse-panel {
     width: 100%;
 
     .collapse-panel__title {

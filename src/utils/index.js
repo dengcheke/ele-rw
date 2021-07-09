@@ -2,30 +2,6 @@ export function isDefined(obj) {
     return !(obj === null || obj === undefined)
 }
 
-//async包装器,异步转同步写法,无需try捕获错误
-/*
-    e.g
-        let [res,err] = await asyncWrap(asyncApi(xx));
-        if(res){
-            // handle success
-        }else{
-            // handle error
-        }
-
-    equals to
-        try{
-            let res = await asyncApi(xx);
-            //handle success
-        }catch(err){
-            //handle error
-        }
-    or
-        asyncApi(xx).then(res=>{
-            //handle success
-        }).catch( err=> {
-            //hanlde error
-        })
-*/
 export async function asyncWrap(promiseLike) {
     if (promiseLike instanceof Promise) {
         return promiseLike.then(res => [res, undefined]).catch(e => [undefined, e]);
@@ -56,9 +32,7 @@ export function rafThrottle(step) {
                 let res;
                 try {
                     res = step.call(self, ...args);
-                    if (res && (
-                        res instanceof Promise || (res.then && res.then instanceof Function)
-                    )) {
+                    if (res instanceof Promise || (res?.then && res?.then instanceof Function)) {
                         res.then(() => {
                             lock = false;
                         });
@@ -117,13 +91,12 @@ export function objectToStyleString(obj) {
     }, '')
 }
 
-// array diff 算法， 返回[ resA,resCommon,resB ]
+// array diff 算法， 返回[ resA, resCommon, resB ]
 // resA, resCommon, resB 均为数组，
 // 内容每一项为以下：
 // [item, item index in arrayA, item index in arrayB]
 const _equals = (a, b) => a === b;
 export function arrayDiff(A, B, equals = _equals) {
-    debugger
     if (!Array.isArray(A) || !Array.isArray(B)) throw new Error('invalid params');
     let arrA = [...A], arrB = [...B];
     let aStart = 0, aEnd = arrA.length - 1,
@@ -216,11 +189,9 @@ export function genUniqueVal(){
     }
 }
 
-
-
-export const throttle = require('loadsh/throttle.js');
-export const cloneDeep = require('loadsh/cloneDeep');
-export const clone = require('loadsh/clone');
-export const debounce = require('loadsh/debounce');
-export const get = require('loadsh/get');
-export const isObject = require('loadsh/isObject');
+export const throttle = require('lodash/throttle.js');
+export const cloneDeep = require('lodash/cloneDeep');
+export const clone = require('lodash/clone');
+export const debounce = require('lodash/debounce');
+export const get = require('lodash/get');
+export const isObject = require('lodash/isObject');

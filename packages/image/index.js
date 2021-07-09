@@ -1,6 +1,6 @@
-import Component from './image';
+import Comp from './image';
 
-Component.install = function (Vue) {
-    Vue.component(Component.name, Component);
+Comp.install = function (Vue) {
+    Vue.component(Comp.name, Comp);
 };
-export default Component;
+export default Comp;

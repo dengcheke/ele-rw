@@ -1,8 +1,8 @@
 <script type="text/jsx">
 import {mapping} from "@src/utils/index";
+import {addClass, removeClass} from "@src/utils/dom";
 import BodyTrRender from './tbody-tr-render';
 import ExpandTrRender from './expand-tr-render';
-import {addClass, removeClass} from "@src/utils/dom";
 import {walkTreeNode} from "./utils";
 
 export default {
