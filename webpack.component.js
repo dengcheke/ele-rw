@@ -21,7 +21,6 @@ module.exports = {
             '@src': path.resolve(__dirname, './src'),
             '@lib': path.resolve(__dirname, './lib'),
             '@packages': path.resolve(__dirname, './packages'),
-            'eleRw-ui': path.resolve(__dirname, './')
         },
         modules: ['node_modules']
     },
