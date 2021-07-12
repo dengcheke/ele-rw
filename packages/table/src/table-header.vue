@@ -2,7 +2,7 @@
 import {ASC, DESC} from "./store";
 import {isDefined, mapping} from "@src/utils/index";
 import {addClass, off, on, removeClass} from "@src/utils/dom";
-import {objectToStyleString} from "@src/utils";
+import {objectToStyleString} from "@src/utils/index";
 import {resolveClass, resolveStyle} from "./utils";
 import {TABLE} from "./table-config";
 

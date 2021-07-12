@@ -267,7 +267,6 @@ export default {
     },
     computed: {
         ...mapping('store', {
-            containerWidth: store => store.containerWidth || 0,
             fixedLeftCount: store => store.fixedLeftCount || 0,
             fixedLeftWidth: store => store.fixedLeftWidth || 0,
             fixedRightCount: store => store.fixedRightCount || 0,
@@ -314,7 +313,7 @@ export default {
         },
         //内部wrap样式
         calcInnerStyle() {
-            const style = {}, W = this.containerWidth;
+            const style = {}, W = this.store.containerWidth;
             if (!W) return;
             const fixedWidth = this.fixedLeftWidth + this.fixedRightWidth;
             style.width = clamp(this.tableBodyWidth, 0, Math.max(fixedWidth, W)) + 'px';
